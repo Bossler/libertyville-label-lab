@@ -1,18 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Coffee, Palette, Sparkles, Package } from 'lucide-react';
-import { BlendCreator } from '@/components/BlendCreator';
+import { Coffee, Palette, Sparkles, Package, ShoppingBag } from 'lucide-react';
 import { LabelDesigner } from '@/components/LabelDesigner';
 import { AIAssistant } from '@/components/AIAssistant';
-import { OrderSummary } from '@/components/OrderSummary';
 import coffeeHero from '@/assets/coffee-hero.jpg';
 
-interface BlendComponent {
-  coffee: { id: string; name: string; flavor: string; origin: string; roast: string };
-  percentage: number;
+interface ProductInfo {
+  name: string;
+  weight: string;
+  type: 'regular' | 'decaf';
+  grind: 'whole-bean' | 'ground';
+  price?: string;
+  description?: string;
 }
 
 interface LabelData {
@@ -22,25 +24,39 @@ interface LabelData {
 }
 
 const Index = () => {
-  const [selectedBlend, setSelectedBlend] = useState<BlendComponent[]>([]);
-  const [totalPercentage, setTotalPercentage] = useState(0);
+  const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [labelData, setLabelData] = useState<LabelData>({
     coffeeName: '',
     tastingNotes: ''
   });
 
-  const handleBlendChange = (blend: BlendComponent[], total: number) => {
-    setSelectedBlend(blend);
-    setTotalPercentage(total);
-    
-    // Auto-generate blend name if coffee name is empty
-    if (!labelData.coffeeName && blend.length > 0) {
-      const blendName = blend.length === 1 
-        ? blend[0].coffee.name
-        : `Custom ${blend.length}-Bean Blend`;
-      setLabelData(prev => ({ ...prev, coffeeName: blendName }));
+  // Extract product info from URL parameters (from Shopify)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const name = urlParams.get('name');
+    const weight = urlParams.get('weight');
+    const type = urlParams.get('type') as 'regular' | 'decaf';
+    const grind = urlParams.get('grind') as 'whole-bean' | 'ground';
+    const price = urlParams.get('price');
+    const description = urlParams.get('description');
+
+    if (name && weight) {
+      const product: ProductInfo = {
+        name,
+        weight,
+        type: type || 'regular',
+        grind: grind || 'whole-bean',
+        price,
+        description
+      };
+      setProductInfo(product);
+      
+      // Auto-set coffee name if not already set
+      if (!labelData.coffeeName) {
+        setLabelData(prev => ({ ...prev, coffeeName: name }));
+      }
     }
-  };
+  }, []);
 
   const handleSuggestion = (suggestion: string, type: 'name' | 'notes') => {
     // This is called from AI Assistant but doesn't auto-fill
@@ -62,10 +78,10 @@ const Index = () => {
                 Custom Coffee Label Designer
               </h1>
               <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto px-4">
-                Create your perfect blend and design a beautiful 4" × 6" label for Libertyville Coffee Company
+                Design a beautiful 4" × 6" label for your Java Mania coffee selection
               </p>
               <Badge variant="secondary" className="text-sm">
-                Professional Quality Printing • Custom Blends • AI Assistance
+                Professional Quality Printing • Shopify Integration • AI Assistance
               </Badge>
             </div>
           </div>
@@ -74,11 +90,11 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="blend" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-card shadow-soft">
-            <TabsTrigger value="blend" className="flex items-center gap-2">
-              <Coffee className="w-4 h-4" />
-              <span className="hidden sm:inline">Blend</span>
+        <Tabs defaultValue="product" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 bg-card shadow-soft">
+            <TabsTrigger value="product" className="flex items-center gap-2">
+              <ShoppingBag className="w-4 h-4" />
+              <span className="hidden sm:inline">Product</span>
             </TabsTrigger>
             <TabsTrigger value="label" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
@@ -88,46 +104,76 @@ const Index = () => {
               <Sparkles className="w-4 h-4" />
               <span className="hidden sm:inline">AI Help</span>
             </TabsTrigger>
-            <TabsTrigger value="order" className="flex items-center gap-2">
-              <Package className="w-4 h-4" />
-              <span className="hidden sm:inline">Order</span>
-            </TabsTrigger>
           </TabsList>
 
           <div className="grid lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <TabsContent value="blend" className="mt-0">
-                <BlendCreator 
-                  selectedBlend={selectedBlend}
-                  onBlendChange={handleBlendChange}
-                />
+              <TabsContent value="product" className="mt-0">
+                <Card className="bg-card border-border shadow-soft">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Coffee className="w-5 h-5" />
+                      Product Details
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {productInfo ? (
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Coffee Name</label>
+                            <p className="text-lg font-semibold">{productInfo.name}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Weight</label>
+                            <p className="text-lg">{productInfo.weight}</p>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Type</label>
+                            <Badge variant="secondary" className="capitalize">{productInfo.type}</Badge>
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Grind</label>
+                            <Badge variant="secondary" className="capitalize">{productInfo.grind.replace('-', ' ')}</Badge>
+                          </div>
+                        </div>
+                        {productInfo.description && (
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Description</label>
+                            <p className="text-sm mt-1">{productInfo.description}</p>
+                          </div>
+                        )}
+                        {productInfo.price && (
+                          <div>
+                            <label className="text-sm font-medium text-muted-foreground">Price</label>
+                            <p className="text-lg font-semibold">${productInfo.price}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <Coffee className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                        <p className="text-muted-foreground">
+                          No product information found. This page should be accessed from your Shopify store.
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </TabsContent>
 
               <TabsContent value="label" className="mt-0">
                 <LabelDesigner
                   labelData={labelData}
                   onLabelChange={setLabelData}
-                  blendName={selectedBlend.length > 0 ? 
-                    selectedBlend.length === 1 
-                      ? selectedBlend[0].coffee.name
-                      : `Custom ${selectedBlend.length}-Bean Blend`
-                    : undefined
-                  }
+                  productName={productInfo?.name}
                 />
               </TabsContent>
 
               <TabsContent value="ai" className="mt-0">
                 <AIAssistant
-                  selectedBlend={selectedBlend}
+                  productInfo={productInfo}
                   onSuggestion={handleSuggestion}
-                />
-              </TabsContent>
-
-              <TabsContent value="order" className="mt-0">
-                <OrderSummary
-                  selectedBlend={selectedBlend}
-                  labelData={labelData}
-                  totalPercentage={totalPercentage}
                 />
               </TabsContent>
             </div>
@@ -141,19 +187,21 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Blend Total:</span>
-                    <Badge variant={totalPercentage === 100 ? "default" : "secondary"}>
-                      {totalPercentage}%
+                    <span className="text-sm text-muted-foreground">Product:</span>
+                    <Badge variant={productInfo ? "default" : "secondary"}>
+                      {productInfo ? 'Loaded' : 'Missing'}
                     </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Coffee Count:</span>
-                    <Badge variant="secondary">{selectedBlend.length}/4</Badge>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Label Name:</span>
                     <Badge variant={labelData.coffeeName ? "default" : "secondary"}>
                       {labelData.coffeeName ? 'Set' : 'Empty'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Tasting Notes:</span>
+                    <Badge variant={labelData.tastingNotes ? "default" : "secondary"}>
+                      {labelData.tastingNotes ? 'Added' : 'Empty'}
                     </Badge>
                   </div>
                 </CardContent>
@@ -166,10 +214,10 @@ const Index = () => {
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm text-muted-foreground">
                   <div className="space-y-2">
-                    <p><strong>1. Create Blend:</strong> Choose 1-4 coffees, assign percentages (must total 100%)</p>
+                    <p><strong>1. Product Info:</strong> Comes from your Shopify product selection</p>
                     <p><strong>2. Design Label:</strong> Add name, tasting notes, and optional background image</p>
                     <p><strong>3. Get AI Help:</strong> Use AI for creative suggestions (copy & paste manually)</p>
-                    <p><strong>4. Submit Order:</strong> We'll print your custom label at professional quality</p>
+                    <p><strong>4. Complete Order:</strong> We'll print your custom label at professional quality</p>
                   </div>
                 </CardContent>
               </Card>

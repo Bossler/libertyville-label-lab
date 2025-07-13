@@ -16,13 +16,13 @@ interface LabelData {
 interface LabelDesignerProps {
   labelData: LabelData;
   onLabelChange: (data: LabelData) => void;
-  blendName?: string;
+  productName?: string;
 }
 
 export const LabelDesigner: React.FC<LabelDesignerProps> = ({ 
   labelData, 
   onLabelChange,
-  blendName 
+  productName 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -76,7 +76,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
     // Coffee name (title)
     ctx.font = 'bold 32px serif';
-    const coffeeName = labelData.coffeeName || blendName || 'Custom Blend';
+    const coffeeName = labelData.coffeeName || productName || 'Custom Coffee';
     ctx.fillText(coffeeName, canvas.width / 2, 80);
     ctx.strokeText(coffeeName, canvas.width / 2, 80);
 
@@ -183,7 +183,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 id="coffeeName"
                 value={labelData.coffeeName}
                 onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
-                placeholder={blendName || "Enter coffee name"}
+                placeholder={productName || "Enter coffee name"}
                 className="mt-1"
               />
             </div>

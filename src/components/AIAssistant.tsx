@@ -6,17 +6,21 @@ import { Badge } from '@/components/ui/badge';
 import { Sparkles, Copy, RefreshCw, Coffee } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface BlendComponent {
-  coffee: { name: string; flavor: string; origin: string };
-  percentage: number;
+interface ProductInfo {
+  name: string;
+  weight: string;
+  type: 'regular' | 'decaf';
+  grind: 'whole-bean' | 'ground';
+  price?: string;
+  description?: string;
 }
 
 interface AIAssistantProps {
-  selectedBlend: BlendComponent[];
+  productInfo: ProductInfo | null;
   onSuggestion: (suggestion: string, type: 'name' | 'notes') => void;
 }
 
-export const AIAssistant: React.FC<AIAssistantProps> = ({ selectedBlend, onSuggestion }) => {
+export const AIAssistant: React.FC<AIAssistantProps> = ({ productInfo, onSuggestion }) => {
   const [suggestions, setSuggestions] = useState<{
     names: string[];
     notes: string[];
@@ -28,43 +32,39 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ selectedBlend, onSugge
   const [isGenerating, setIsGenerating] = useState(false);
 
   const generateSuggestions = async () => {
-    if (selectedBlend.length === 0) {
-      toast.error('Please select at least one coffee to generate suggestions');
+    if (!productInfo) {
+      toast.error('Product information is required to generate suggestions');
       return;
     }
 
     setIsGenerating(true);
 
-    // Simulate AI generation based on blend components
+    // Simulate AI generation based on product info
     await new Promise(resolve => setTimeout(resolve, 1500));
 
-    const blendDescription = selectedBlend.map(component => 
-      `${component.percentage}% ${component.coffee.name} (${component.coffee.origin})`
-    ).join(', ');
+    const coffeeName = productInfo.name;
+    const coffeeType = productInfo.type;
+    const grindType = productInfo.grind;
 
-    const coffeeNames = selectedBlend.map(c => c.coffee.name);
-    const flavors = selectedBlend.flatMap(c => c.coffee.flavor.split(', '));
-    const origins = selectedBlend.map(c => c.coffee.origin);
-
-    // Generate coffee names
+    // Generate creative coffee names based on product
     const nameTemplates = [
-      `${origins[0]} Harmony`,
-      `${flavors[0]} Symphony`,
-      `Artisan's Choice`,
-      `Golden Hour Blend`,
-      `Morning Ritual`,
-      `Café Liberté`,
-      `Heritage Roast`,
-      `Craftsman's Pride`
+      `Artisan ${coffeeName}`,
+      `Heritage ${coffeeName}`,
+      `${coffeeName} Reserve`,
+      `Custom ${coffeeName}`,
+      `Premium ${coffeeName}`,
+      `Signature ${coffeeName}`,
+      `Handcrafted ${coffeeName}`,
+      `Traditional ${coffeeName}`
     ];
 
-    // Generate tasting notes
-    const dominantFlavors = flavors.slice(0, 3);
+    // Generate tasting notes based on coffee type and characteristics
     const noteTemplates = [
-      `A harmonious blend featuring notes of ${dominantFlavors.join(', ').toLowerCase()}. This carefully crafted combination delivers a balanced cup with complexity that evolves with each sip.`,
-      `Rich and full-bodied with prominent ${dominantFlavors[0].toLowerCase()} undertones. The ${origins[0]} components provide structure while complementary beans add depth and character.`,
-      `An artisanal creation that celebrates the unique terroir of ${origins.join(' and ')}. Expect layers of ${dominantFlavors.join(', ').toLowerCase()} with a smooth, satisfying finish.`,
-      `This signature blend combines the best of ${origins.length > 1 ? 'multiple origins' : origins[0]} to create a cup that's both approachable and sophisticated. Perfect for any time of day.`
+      `This ${coffeeType} coffee delivers a rich, full-bodied experience with complex flavor notes and a smooth finish. Perfect for any time of day.`,
+      `A carefully selected ${coffeeName.toLowerCase()} offering balanced acidity and depth. The ${grindType.replace('-', ' ')} preparation enhances its natural characteristics.`,
+      `Experience the authentic taste of premium ${coffeeName.toLowerCase()}. This ${coffeeType} variety showcases traditional coffee craftsmanship with modern quality standards.`,
+      `Crafted for coffee enthusiasts, this ${coffeeName.toLowerCase()} blend provides exceptional flavor complexity with notes that evolve beautifully in each cup.`,
+      `A distinguished ${coffeeType} coffee that exemplifies quality and tradition. The careful roasting process brings out the unique characteristics of this exceptional bean.`
     ];
 
     setSuggestions({
@@ -102,17 +102,27 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ selectedBlend, onSugge
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {selectedBlend.length > 0 ? (
+          {productInfo ? (
             <>
               <div className="space-y-2">
-                <h4 className="font-medium text-foreground">Your Blend:</h4>
+                <h4 className="font-medium text-foreground">Your Product:</h4>
                 <div className="text-sm text-muted-foreground space-y-1">
-                  {selectedBlend.map((component, index) => (
-                    <div key={index} className="flex justify-between">
-                      <span>{component.coffee.name}</span>
-                      <Badge variant="secondary">{component.percentage}%</Badge>
-                    </div>
-                  ))}
+                  <div className="flex justify-between">
+                    <span>Coffee:</span>
+                    <Badge variant="secondary">{productInfo.name}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Type:</span>
+                    <Badge variant="secondary" className="capitalize">{productInfo.type}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Grind:</span>
+                    <Badge variant="secondary" className="capitalize">{productInfo.grind.replace('-', ' ')}</Badge>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Weight:</span>
+                    <Badge variant="secondary">{productInfo.weight}</Badge>
+                  </div>
                 </div>
               </div>
 
@@ -191,7 +201,7 @@ export const AIAssistant: React.FC<AIAssistantProps> = ({ selectedBlend, onSugge
           ) : (
             <div className="text-center py-8 text-muted-foreground">
               <Coffee className="w-12 h-12 mx-auto mb-3 opacity-50" />
-              <p>Create a coffee blend first to get AI suggestions for names and tasting notes.</p>
+              <p>Product information from Shopify is required to generate AI suggestions for names and tasting notes.</p>
             </div>
           )}
         </CardContent>
