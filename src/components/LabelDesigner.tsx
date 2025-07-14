@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Palette, Download, Image, Sparkles, Bot, Move, GripVertical } from 'lucide-react';
+import { Palette, Download, Image, Sparkles, Bot, Move, GripVertical, Type, Paintbrush } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -58,6 +58,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [tastingNotesFontSize, setTastingNotesFontSize] = useState(16);
   const [isDragging, setIsDragging] = useState<'coffeeName' | 'tastingNotes' | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [activeTextElement, setActiveTextElement] = useState<'coffeeName' | 'tastingNotes' | null>(null);
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -579,6 +580,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             value={labelData.coffeeName}
                             onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
                             onBlur={calculateFontSize}
+                            onFocus={() => setActiveTextElement('coffeeName')}
                             placeholder="Edit Coffee Name • Drag to Move"
                             className="resize-none overflow-hidden border-0 bg-transparent backdrop-blur text-center font-bold shadow-none pointer-events-auto pl-8"
                             style={{
@@ -591,6 +593,52 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                           />
+                          
+                          {/* Floating Toolbar for Coffee Name */}
+                          {activeTextElement === 'coffeeName' && (
+                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-popover border border-border rounded-lg shadow-lg p-2 flex items-center gap-2 z-50 animate-scale-in">
+                              <div className="flex items-center gap-1 border-r border-border pr-2">
+                                <Type className="w-4 h-4 text-muted-foreground" />
+                                <Select 
+                                  value={labelData.fontFamily || 'serif'} 
+                                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
+                                >
+                                  <SelectTrigger className="w-24 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {fontOptions.map(font => (
+                                      <SelectItem key={font.value} value={font.value} className="text-xs">
+                                        <span style={{ fontFamily: font.value }}>{font.label}</span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="flex items-center gap-1">
+                                <Paintbrush className="w-4 h-4 text-muted-foreground" />
+                                <Select 
+                                  value={labelData.textColor || '#000000'} 
+                                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
+                                >
+                                  <SelectTrigger className="w-20 h-8 text-xs">
+                                    <div className="w-4 h-4 rounded border border-border" style={{ backgroundColor: labelData.textColor || '#000000' }}></div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {colorOptions.map(color => (
+                                      <SelectItem key={color.value} value={color.value} className="text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded border border-border" style={{ backgroundColor: color.value }}></div>
+                                          {color.label}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
                           <Button
                             onClick={() => handleAIButtonClick('name')}
                             variant="ghost"
@@ -640,6 +688,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             value={labelData.tastingNotes}
                             onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
                             onBlur={calculateTastingNotesFontSize}
+                            onFocus={() => setActiveTextElement('tastingNotes')}
                             placeholder="Edit Coffee Description • Drag to Move"
                             className="resize-none overflow-hidden border-0 bg-transparent backdrop-blur text-center shadow-none pointer-events-auto pl-8"
                             style={{
@@ -652,6 +701,52 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             }}
                             onMouseDown={(e) => e.stopPropagation()}
                           />
+                          
+                          {/* Floating Toolbar for Tasting Notes */}
+                          {activeTextElement === 'tastingNotes' && (
+                            <div className="absolute -top-16 left-1/2 transform -translate-x-1/2 bg-popover border border-border rounded-lg shadow-lg p-2 flex items-center gap-2 z-50 animate-scale-in">
+                              <div className="flex items-center gap-1 border-r border-border pr-2">
+                                <Type className="w-4 h-4 text-muted-foreground" />
+                                <Select 
+                                  value={labelData.fontFamily || 'serif'} 
+                                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
+                                >
+                                  <SelectTrigger className="w-24 h-8 text-xs">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {fontOptions.map(font => (
+                                      <SelectItem key={font.value} value={font.value} className="text-xs">
+                                        <span style={{ fontFamily: font.value }}>{font.label}</span>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              
+                              <div className="flex items-center gap-1">
+                                <Paintbrush className="w-4 h-4 text-muted-foreground" />
+                                <Select 
+                                  value={labelData.textColor || '#000000'} 
+                                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
+                                >
+                                  <SelectTrigger className="w-20 h-8 text-xs">
+                                    <div className="w-4 h-4 rounded border border-border" style={{ backgroundColor: labelData.textColor || '#000000' }}></div>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {colorOptions.map(color => (
+                                      <SelectItem key={color.value} value={color.value} className="text-xs">
+                                        <div className="flex items-center gap-2">
+                                          <div className="w-4 h-4 rounded border border-border" style={{ backgroundColor: color.value }}></div>
+                                          {color.label}
+                                        </div>
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          )}
                           <Button
                             onClick={() => handleAIButtonClick('notes')}
                             variant="ghost"
