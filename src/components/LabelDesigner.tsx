@@ -520,8 +520,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         style={{ maxWidth: '500px', height: 'auto' }}
                       />
                     
-                      {/* Background Options Overlay */}
-                      <div className="absolute top-4 right-4 flex flex-col gap-2">
+                      {/* Background Options Overlay - Centered */}
+                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-row gap-2 z-50">
                         <input
                           ref={fileInputRef}
                           type="file"
@@ -533,7 +533,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           onClick={() => fileInputRef.current?.click()}
                           variant="secondary"
                           size="sm"
-                          className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
+                          className="bg-background/95 hover:bg-background shadow-lg backdrop-blur border border-border/50"
                         >
                           <Image className="w-4 h-4 mr-1" />
                           Upload
@@ -543,7 +543,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           variant="secondary"
                           size="sm"
                           disabled={isGeneratingImage}
-                          className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
+                          className="bg-background/95 hover:bg-background shadow-lg backdrop-blur border border-border/50"
                         >
                           {isGeneratingImage ? (
                             <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-1" />
@@ -557,7 +557,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             onClick={() => onLabelChange({ ...labelData, backgroundImage: undefined })}
                             variant="destructive"
                             size="sm"
-                            className="bg-background/90 hover:bg-destructive/90 shadow-lg backdrop-blur"
+                            className="bg-background/95 hover:bg-destructive/90 shadow-lg backdrop-blur border border-border/50"
                           >
                             Remove
                           </Button>
