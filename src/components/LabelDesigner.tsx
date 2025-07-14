@@ -43,6 +43,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({});
   const [aiDialogOpen, setAiDialogOpen] = useState<string | null>(null);
@@ -50,6 +51,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [imagePrompt, setImagePrompt] = useState('');
   const [imageStyle, setImageStyle] = useState('');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [dynamicFontSize, setDynamicFontSize] = useState(32);
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -76,7 +78,30 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   useEffect(() => {
     drawLabel();
+    calculateFontSize();
   }, [labelData, previewMode]);
+
+  const calculateFontSize = () => {
+    const text = labelData.coffeeName || '';
+    const maxLineLength = 20; // Approximate characters per line
+    const maxTwoLineLength = 40; // Maximum characters for two lines
+    
+    if (text.length === 0) {
+      setDynamicFontSize(32);
+    } else if (text.length <= maxLineLength) {
+      // Single line, full size
+      setDynamicFontSize(32);
+    } else if (text.length <= maxTwoLineLength) {
+      // Two lines, full size
+      setDynamicFontSize(32);
+    } else {
+      // Scale down based on length beyond two lines
+      const excess = text.length - maxTwoLineLength;
+      const scaleFactor = Math.max(0.25, 1 - (excess * 0.02)); // Minimum 25% (8px from 32px)
+      const newSize = Math.max(8, Math.round(32 * scaleFactor));
+      setDynamicFontSize(newSize);
+    }
+  };
 
   const drawLabel = () => {
     const canvas = canvasRef.current;
@@ -363,26 +388,38 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         
                         {/* Editable Coffee Name Overlay */}
                         <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-md">
-                          <div className="relative flex items-center">
-                            <Input
+                          <div className="relative flex items-start">
+                            <Textarea
+                              ref={textareaRef}
                               value={labelData.coffeeName}
                               onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
                               placeholder="Edit Coffee Name"
-                              className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 pr-10"
+                              className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0"
                               style={{
-                                fontSize: '2rem',
+                                fontSize: `${dynamicFontSize}px`,
                                 fontFamily: labelData.fontFamily || 'serif',
                                 color: labelData.textColor || '#ffffff',
-                                textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+                                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                                lineHeight: '1.1',
+                                height: dynamicFontSize > 24 ? `${dynamicFontSize * 2.2}px` : `${dynamicFontSize * 2.4}px`
                               }}
-                              maxLength={45}
+                              maxLength={120}
+                              rows={2}
+                              onInput={(e) => {
+                                // Auto-resize height based on content
+                                const target = e.target as HTMLTextAreaElement;
+                                target.style.height = 'auto';
+                                const scrollHeight = target.scrollHeight;
+                                const maxHeight = dynamicFontSize * 2.4;
+                                target.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+                              }}
                             />
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleAIButtonClick('name')}
                               disabled={isGeneratingAI.name}
-                              className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
+                              className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
                             >
                               {isGeneratingAI.name ? (
                                 <Sparkles className="w-4 h-4 animate-pulse text-primary" />
