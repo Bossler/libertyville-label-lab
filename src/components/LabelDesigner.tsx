@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Palette, Download, Image, Sparkles, Type, Bot, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +44,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({});
+  const [aiDialogOpen, setAiDialogOpen] = useState<string | null>(null);
+  const [userRequest, setUserRequest] = useState('');
+  const [openaiApiKey, setOpenaiApiKey] = useState('');
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -201,68 +205,104 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }, 100);
   };
 
-  const generateAISuggestion = async (type: 'name' | 'notes' | 'preview') => {
+  const generateAISuggestion = async (type: 'name' | 'notes' | 'preview', request: string) => {
     if (!productInfo) {
       toast.error('Product information is required to generate AI suggestions');
       return;
     }
 
+    if (!openaiApiKey) {
+      toast.error('OpenAI API key is required. Please enter it in the dialog.');
+      return;
+    }
+
     setIsGeneratingAI(prev => ({ ...prev, [type]: true }));
+    setAiDialogOpen(null);
 
-    // Simulate AI generation
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      let currentContent = '';
+      let systemPrompt = '';
+      
+      if (type === 'name') {
+        currentContent = labelData.coffeeName || '';
+        systemPrompt = `You are an expert coffee branding specialist. Help improve coffee names for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight}). Current name: "${currentContent}". User request: "${request}". Provide only the improved name, nothing else.`;
+      } else if (type === 'notes') {
+        currentContent = labelData.tastingNotes || '';
+        systemPrompt = `You are an expert coffee taster and copywriter. Help improve tasting notes for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight}). Current notes: "${currentContent}". User request: "${request}". Provide only the improved tasting notes, nothing else.`;
+      } else if (type === 'preview') {
+        currentContent = `Font: ${labelData.fontFamily || 'serif'}, Color: ${labelData.textColor || '#ffffff'}`;
+        systemPrompt = `You are a label design expert. Current style: ${currentContent}. User request: "${request}". Respond with ONLY a JSON object like {"fontFamily": "serif", "textColor": "#ffffff"} with improved values.`;
+      }
 
-    const coffeeName = productInfo.name;
-    const coffeeType = productInfo.type;
-    const grindType = productInfo.grind;
-
-    let suggestion = '';
-
-    if (type === 'name') {
-      const nameTemplates = [
-        `Artisan ${coffeeName}`,
-        `Heritage ${coffeeName}`,
-        `${coffeeName} Reserve`,
-        `Premium ${coffeeName}`,
-        `Signature ${coffeeName}`,
-        `Handcrafted ${coffeeName}`
-      ];
-      suggestion = nameTemplates[Math.floor(Math.random() * nameTemplates.length)];
-      
-      // Auto-fill the suggestion
-      onLabelChange({ ...labelData, coffeeName: suggestion });
-      toast.success('AI Barista suggestion applied to coffee name!');
-      
-    } else if (type === 'notes') {
-      const noteTemplates = [
-        `This ${coffeeType} coffee delivers a rich, full-bodied experience with complex flavor notes and a smooth finish. Perfect for any time of day.`,
-        `A carefully selected ${coffeeName.toLowerCase()} offering balanced acidity and depth. The ${grindType.replace('-', ' ')} preparation enhances its natural characteristics.`,
-        `Experience the authentic taste of premium ${coffeeName.toLowerCase()}. This ${coffeeType} variety showcases traditional coffee craftsmanship with modern quality standards.`,
-        `Crafted for coffee enthusiasts, this ${coffeeName.toLowerCase()} blend provides exceptional flavor complexity with notes that evolve beautifully in each cup.`,
-      ];
-      suggestion = noteTemplates[Math.floor(Math.random() * noteTemplates.length)];
-      
-      // Auto-fill the suggestion
-      onLabelChange({ ...labelData, tastingNotes: suggestion });
-      toast.success('AI Barista suggestion applied to tasting notes!');
-      
-    } else if (type === 'preview') {
-      // Generate suggestions for both font and color
-      const fonts = ['serif', 'sans-serif', 'cursive', 'Georgia', 'Arial'];
-      const colors = ['#ffffff', '#8B4513', '#D2B48C', '#654321', '#000000'];
-      
-      const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      
-      onLabelChange({ 
-        ...labelData, 
-        fontFamily: randomFont,
-        textColor: randomColor 
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${openaiApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'gpt-4',
+          messages: [
+            {
+              role: 'system',
+              content: systemPrompt
+            }
+          ],
+          max_tokens: 200,
+          temperature: 0.7,
+        }),
       });
-      toast.success('AI Barista suggestion applied to label style!');
+
+      if (!response.ok) {
+        throw new Error(`OpenAI API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const suggestion = data.choices[0].message.content.trim();
+
+      if (type === 'name') {
+        onLabelChange({ ...labelData, coffeeName: suggestion });
+        toast.success('AI Barista improved your coffee name!');
+      } else if (type === 'notes') {
+        onLabelChange({ ...labelData, tastingNotes: suggestion });
+        toast.success('AI Barista improved your tasting notes!');
+      } else if (type === 'preview') {
+        try {
+          const styleData = JSON.parse(suggestion);
+          onLabelChange({ 
+            ...labelData, 
+            fontFamily: styleData.fontFamily,
+            textColor: styleData.textColor 
+          });
+          toast.success('AI Barista improved your label style!');
+        } catch {
+          toast.error('Failed to parse style suggestions');
+        }
+      }
+
+    } catch (error) {
+      console.error('OpenAI API error:', error);
+      toast.error('Failed to generate AI suggestion. Please check your API key.');
     }
 
     setIsGeneratingAI(prev => ({ ...prev, [type]: false }));
+    setUserRequest('');
+  };
+
+  const handleAIButtonClick = (type: 'name' | 'notes' | 'preview') => {
+    setAiDialogOpen(type);
+    setUserRequest('');
+  };
+
+  const handleAISubmit = () => {
+    if (!userRequest.trim()) {
+      toast.error('Please describe how you\'d like to improve this field');
+      return;
+    }
+    
+    if (aiDialogOpen) {
+      generateAISuggestion(aiDialogOpen as 'name' | 'notes' | 'preview', userRequest);
+    }
   };
 
   const generateAIImage = async () => {
@@ -289,7 +329,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => generateAISuggestion('name')}
+                  onClick={() => handleAIButtonClick('name')}
                   disabled={!productInfo || isGeneratingAI.name}
                 >
                   {isGeneratingAI.name ? (
@@ -315,7 +355,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => generateAISuggestion('notes')}
+                  onClick={() => handleAIButtonClick('notes')}
                   disabled={!productInfo || isGeneratingAI.notes}
                 >
                   {isGeneratingAI.notes ? (
@@ -424,7 +464,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => generateAISuggestion('preview')}
+                  onClick={() => handleAIButtonClick('preview')}
                   disabled={!productInfo || isGeneratingAI.preview}
                 >
                   {isGeneratingAI.preview ? (
@@ -467,6 +507,81 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* AI Barista Dialog */}
+      <Dialog open={!!aiDialogOpen} onOpenChange={(open) => !open && setAiDialogOpen(null)}>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="w-5 h-5 text-primary" />
+              AI Barista Assistance
+            </DialogTitle>
+            <DialogDescription>
+              How would you like to improve this {aiDialogOpen === 'name' ? 'coffee name' : aiDialogOpen === 'notes' ? 'tasting notes' : 'label style'}?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {!openaiApiKey && (
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">OpenAI API Key</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  value={openaiApiKey}
+                  onChange={(e) => setOpenaiApiKey(e.target.value)}
+                  placeholder="Enter your OpenAI API key"
+                  className="font-mono text-sm"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Your API key is stored locally and not saved. For production use, consider connecting to Supabase for secure secret management.
+                </p>
+              </div>
+            )}
+            
+            <div className="space-y-2">
+              <Label htmlFor="userRequest">Your Request</Label>
+              <Textarea
+                id="userRequest"
+                value={userRequest}
+                onChange={(e) => setUserRequest(e.target.value)}
+                placeholder={
+                  aiDialogOpen === 'name' 
+                    ? "e.g., Make it sound more premium and artisanal"
+                    : aiDialogOpen === 'notes'
+                    ? "e.g., Add more detail about chocolate and caramel notes"
+                    : "e.g., Make it more elegant and readable"
+                }
+                className="min-h-[80px]"
+              />
+            </div>
+            
+            {aiDialogOpen && (
+              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
+                <strong>Current {aiDialogOpen === 'name' ? 'name' : aiDialogOpen === 'notes' ? 'notes' : 'style'}:</strong>
+                <p className="mt-1">
+                  {aiDialogOpen === 'name' && (labelData.coffeeName || 'Empty')}
+                  {aiDialogOpen === 'notes' && (labelData.tastingNotes || 'Empty')}
+                  {aiDialogOpen === 'preview' && `Font: ${labelData.fontFamily || 'serif'}, Color: ${labelData.textColor || '#ffffff'}`}
+                </p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAiDialogOpen(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleAISubmit}
+              disabled={!userRequest.trim() || !openaiApiKey}
+            >
+              <Sparkles className="w-4 h-4 mr-2" />
+              Improve with AI
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
