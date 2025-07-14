@@ -17,6 +17,8 @@ interface LabelData {
   backgroundImage?: string;
   fontFamily?: string;
   textColor?: string;
+  coffeeNamePosition?: { x: number; y: number };
+  tastingNotesPosition?: { x: number; y: number };
 }
 
 interface ProductInfo {
@@ -54,6 +56,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [dynamicFontSize, setDynamicFontSize] = useState(32);
   const [tastingNotesFontSize, setTastingNotesFontSize] = useState(16);
+  const [isDragging, setIsDragging] = useState<'coffeeName' | 'tastingNotes' | null>(null);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -413,6 +417,53 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   const isAnyAILoading = Object.values(isGeneratingAI).some(Boolean) || isGeneratingImage;
 
+  const handleMouseDown = (e: React.MouseEvent, element: 'coffeeName' | 'tastingNotes') => {
+    e.preventDefault();
+    setIsDragging(element);
+    
+    const rect = e.currentTarget.getBoundingClientRect();
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+    
+    const offsetX = e.clientX - rect.left;
+    const offsetY = e.clientY - rect.top;
+    setDragOffset({ x: offsetX, y: offsetY });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging || !canvasRef.current) return;
+    
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const newX = Math.max(0, Math.min(e.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 344));
+    const newY = Math.max(0, Math.min(e.clientY - canvasRect.top - dragOffset.y, canvasRect.height - (isDragging === 'coffeeName' ? 64 : 72)));
+    
+    if (isDragging === 'coffeeName') {
+      onLabelChange({
+        ...labelData,
+        coffeeNamePosition: { x: newX, y: newY }
+      });
+    } else if (isDragging === 'tastingNotes') {
+      onLabelChange({
+        ...labelData,
+        tastingNotesPosition: { x: newX, y: newY }
+      });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(null);
+    setDragOffset({ x: 0, y: 0 });
+  };
+
+  const resetPositions = () => {
+    onLabelChange({
+      ...labelData,
+      coffeeNamePosition: undefined,
+      tastingNotesPosition: undefined
+    });
+    toast.success('Text positions reset to default');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-warmth p-4">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -443,168 +494,161 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               <div className="flex justify-center">
                 <div className="relative">
                   <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
-                    <canvas
-                      ref={canvasRef}
-                      className="border border-border rounded-lg max-w-full h-auto shadow-soft"
-                      style={{ maxWidth: '500px', height: 'auto' }}
-                    />
-                    
-                    {/* Background Options Overlay */}
-                    <div className="absolute top-4 right-4 flex flex-col gap-2">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
+                    <div 
+                      className="relative"
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                    >
+                      <canvas
+                        ref={canvasRef}
+                        className="border border-border rounded-lg max-w-full h-auto shadow-soft"
+                        style={{ maxWidth: '500px', height: 'auto' }}
                       />
-                      <Button
-                        onClick={() => fileInputRef.current?.click()}
-                        variant="secondary"
-                        size="sm"
-                        className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
-                      >
-                        <Image className="w-4 h-4 mr-1" />
-                        Upload
-                      </Button>
-                      <Button
-                        onClick={generateAIImage}
-                        variant="secondary"
-                        size="sm"
-                        disabled={isGeneratingImage}
-                        className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
-                      >
-                        {isGeneratingImage ? (
-                          <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-1" />
-                        ) : (
-                          <Sparkles className="w-4 h-4 mr-1" />
-                        )}
-                        AI Gen
-                      </Button>
-                      {labelData.backgroundImage && (
-                        <Button
-                          onClick={() => onLabelChange({ ...labelData, backgroundImage: undefined })}
-                          variant="destructive"
-                          size="sm"
-                          className="bg-background/90 hover:bg-destructive/90 shadow-lg backdrop-blur"
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
                     
-                    {/* Editable Coffee Name Overlay */}
-                    <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-md">
-                      <div className="relative flex items-start">
-                        <Textarea
-                          ref={textareaRef}
-                          value={labelData.coffeeName}
-                          onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
-                          placeholder="Edit Coffee Name"
-                          className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
-                          style={{
-                            fontSize: `${dynamicFontSize}px`,
-                            fontFamily: labelData.fontFamily || 'serif',
-                            color: labelData.textColor || '#000000',
-                            textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
-                            lineHeight: '1.1',
-                            height: `64px`,
-                            maxHeight: `64px`
-                          }}
-                          maxLength={120}
-                          rows={2}
-                          onKeyDown={(e) => {
-                            // Prevent line breaks that would create a third line
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                            }
-                          }}
-                          onPaste={(e) => {
-                            // Handle paste events to prevent line breaks
-                            e.preventDefault();
-                            const paste = e.clipboardData.getData('text').replace(/\r?\n|\r/g, ' ');
-                            const newValue = labelData.coffeeName + paste;
-                            if (newValue.length <= 120) {
-                              onLabelChange({ ...labelData, coffeeName: newValue });
-                            }
-                          }}
+                      {/* Background Options Overlay */}
+                      <div className="absolute top-4 right-4 flex flex-col gap-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
                         />
                         <Button
-                          variant="ghost"
+                          onClick={() => fileInputRef.current?.click()}
+                          variant="secondary"
                           size="sm"
-                          onClick={() => handleAIButtonClick('name')}
-                          disabled={isGeneratingAI.name}
-                          className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
+                          className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
                         >
-                          {isGeneratingAI.name ? (
-                            <Sparkles className="w-4 h-4 animate-pulse text-primary" />
-                          ) : (
-                            <Bot className="w-4 h-4 text-primary" />
-                          )}
+                          <Image className="w-4 h-4 mr-1" />
+                          Upload
                         </Button>
-                      </div>
-                    </div>
-
-                    {/* Editable Tasting Notes Overlay */}
-                    <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-4/5 max-w-lg">
-                      <div className="relative flex items-start">
-                        <Textarea
-                          ref={tastingNotesRef}
-                          value={labelData.tastingNotes}
-                          onChange={(e) => {
-                            onLabelChange({ ...labelData, tastingNotes: e.target.value });
-                            // Trigger immediate font size recalculation
-                            setTimeout(() => calculateTastingNotesFontSize(), 10);
-                          }}
-                          placeholder="Edit Coffee Description"
-                          className="bg-transparent border-transparent text-center font-medium shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
-                          style={{
-                            fontSize: `${tastingNotesFontSize}px`,
-                            fontFamily: labelData.fontFamily || 'serif',
-                            color: labelData.textColor || '#000000',
-                            textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
-                            lineHeight: '1.2',
-                            height: `72px`,
-                            maxHeight: `72px`
-                          }}
-                          maxLength={300}
-                          rows={3}
-                          onKeyDown={(e) => {
-                            // Allow natural line breaks but prevent excessive lines
-                            const currentLines = e.currentTarget.value.split('\n').length;
-                            if (e.key === 'Enter' && currentLines >= 3) {
-                              e.preventDefault();
-                            }
-                          }}
-                          onPaste={(e) => {
-                            // Handle paste events but allow some line breaks
-                            e.preventDefault();
-                            const paste = e.clipboardData.getData('text');
-                            const lines = paste.split(/\r?\n|\r/);
-                            const limitedText = lines.slice(0, 3).join('\n');
-                            const newValue = labelData.tastingNotes + limitedText;
-                            onLabelChange({ ...labelData, tastingNotes: newValue.substring(0, 300) });
-                          }}
-                        />
                         <Button
-                          variant="ghost"
+                          onClick={generateAIImage}
+                          variant="secondary"
                           size="sm"
-                          onClick={() => handleAIButtonClick('notes')}
-                          disabled={isGeneratingAI.notes}
-                          className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
+                          disabled={isGeneratingImage}
+                          className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
                         >
-                          {isGeneratingAI.notes ? (
-                            <Sparkles className="w-4 h-4 animate-pulse text-primary" />
+                          {isGeneratingImage ? (
+                            <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-1" />
                           ) : (
-                            <Bot className="w-4 h-4 text-primary" />
+                            <Sparkles className="w-4 h-4 mr-1" />
                           )}
+                          AI Gen
                         </Button>
+                        {labelData.backgroundImage && (
+                          <Button
+                            onClick={() => onLabelChange({ ...labelData, backgroundImage: undefined })}
+                            variant="destructive"
+                            size="sm"
+                            className="bg-background/90 hover:bg-destructive/90 shadow-lg backdrop-blur"
+                          >
+                            Remove
+                          </Button>
+                        )}
+                      </div>
+                      
+                      {/* Coffee Name Overlay Input */}
+                      <div 
+                        className="absolute cursor-move group"
+                        style={{
+                          top: labelData.coffeeNamePosition?.y || 20,
+                          left: labelData.coffeeNamePosition?.x || 20,
+                          right: labelData.coffeeNamePosition?.x ? 'auto' : 20,
+                          width: labelData.coffeeNamePosition?.x ? '344px' : 'auto'
+                        }}
+                        onMouseDown={(e) => handleMouseDown(e, 'coffeeName')}
+                      >
+                        <div className="group-hover:ring-2 group-hover:ring-primary/50 rounded-lg transition-all">
+                          <Textarea
+                            ref={textareaRef}
+                            value={labelData.coffeeName}
+                            onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
+                            onBlur={calculateFontSize}
+                            placeholder="Edit Coffee Name"
+                            className="resize-none overflow-hidden border-2 border-dashed border-primary/30 bg-background/80 backdrop-blur text-center font-bold shadow-sm pointer-events-auto"
+                            style={{
+                              fontSize: `${dynamicFontSize}px`,
+                              fontFamily: labelData.fontFamily || 'serif',
+                              color: labelData.textColor || '#000000',
+                              height: '64px',
+                              lineHeight: '1.2',
+                              textAlign: 'center'
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            onClick={() => handleAIButtonClick('name')}
+                            variant="ghost"
+                            size="sm"
+                            disabled={isAnyAILoading}
+                            className="absolute -top-2 -right-2 w-6 h-6 p-0 bg-primary text-primary-foreground hover:bg-primary/80 rounded-full shadow-sm"
+                          >
+                            <Bot className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Tasting Notes Overlay Input */}
+                      <div 
+                        className="absolute cursor-move group"
+                        style={{
+                          top: labelData.tastingNotesPosition?.y || 'auto',
+                          bottom: labelData.tastingNotesPosition?.y ? 'auto' : 80,
+                          left: labelData.tastingNotesPosition?.x || 20,
+                          right: labelData.tastingNotesPosition?.x ? 'auto' : 20,
+                          width: labelData.tastingNotesPosition?.x ? '344px' : 'auto'
+                        }}
+                        onMouseDown={(e) => handleMouseDown(e, 'tastingNotes')}
+                      >
+                        <div className="group-hover:ring-2 group-hover:ring-secondary/50 rounded-lg transition-all">
+                          <Textarea
+                            ref={tastingNotesRef}
+                            value={labelData.tastingNotes}
+                            onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
+                            onBlur={calculateTastingNotesFontSize}
+                            placeholder="Edit Coffee Description"
+                            className="resize-none overflow-hidden border-2 border-dashed border-secondary/30 bg-background/80 backdrop-blur text-center shadow-sm pointer-events-auto"
+                            style={{
+                              fontSize: `${tastingNotesFontSize}px`,
+                              fontFamily: labelData.fontFamily || 'serif',
+                              color: labelData.textColor || '#000000',
+                              height: '72px',
+                              lineHeight: '1.3',
+                              textAlign: 'center'
+                            }}
+                            onMouseDown={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            onClick={() => handleAIButtonClick('notes')}
+                            variant="ghost"
+                            size="sm"
+                            disabled={isAnyAILoading}
+                            className="absolute -top-2 -right-2 w-6 h-6 p-0 bg-secondary text-secondary-foreground hover:bg-secondary/80 rounded-full shadow-sm"
+                          >
+                            <Bot className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
+                        Live Preview
                       </div>
                     </div>
-
-                    <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
-                      Live Preview
-                    </div>
+                  </div>
+                  
+                  {/* Position Controls */}
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      onClick={resetPositions}
+                      variant="outline"
+                      size="sm"
+                      className="text-muted-foreground hover:text-foreground"
+                    >
+                      Reset Text Positions
+                    </Button>
                   </div>
                 </div>
               </div>
