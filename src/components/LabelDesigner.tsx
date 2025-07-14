@@ -108,7 +108,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   const calculateTastingNotesFontSize = () => {
     const text = labelData.tastingNotes || '';
-    const boxHeight = 72; // Fixed box height in pixels
+    const boxHeight = 72;
     const minFontSize = 8;
     const maxFontSize = 72;
     const lineHeight = 1.2;
@@ -119,37 +119,48 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       return;
     }
 
-    // Calculate optimal font size to fill the box
-    const estimatedCharsPerLine = Math.max(1, Math.floor(text.length / maxLines));
-    const baseFontSize = Math.min(maxFontSize, boxHeight / (maxLines * lineHeight));
+    // Estimate actual lines based on word wrapping (more accurate)
+    const wordsCount = text.split(/\s+/).length;
+    const avgWordLength = text.length / Math.max(wordsCount, 1);
+    const estimatedCharsPerLine = Math.floor(280 / Math.max(avgWordLength * 8, 8)); // Rough estimate based on container width
+    const estimatedLines = Math.ceil(text.length / estimatedCharsPerLine);
     
-    // Adjust based on text density
-    let calculatedSize;
-    if (text.length <= 15) {
-      // Very short text - use large font
-      calculatedSize = Math.min(maxFontSize, baseFontSize * 2.5);
-    } else if (text.length <= 30) {
-      // Short text - scale up
-      calculatedSize = Math.min(maxFontSize, baseFontSize * 2);
+    // Calculate font size to fit exactly in the box
+    const targetLines = Math.min(estimatedLines, maxLines);
+    const idealFontSize = (boxHeight / (targetLines * lineHeight));
+    
+    // Apply scaling based on content density
+    let finalSize;
+    if (text.length <= 20) {
+      // Very short - use large font
+      finalSize = Math.min(maxFontSize, idealFontSize * 1.5);
     } else if (text.length <= 60) {
-      // Medium text - optimal size
-      calculatedSize = Math.min(maxFontSize, baseFontSize * 1.5);
-    } else if (text.length <= 120) {
-      // Longer text - scale down gradually
-      const scaleFactor = 1.2 - ((text.length - 60) / 120) * 0.4;
-      calculatedSize = Math.max(minFontSize, baseFontSize * scaleFactor);
+      // Medium length - optimal size
+      finalSize = Math.min(maxFontSize, idealFontSize);
+    } else if (text.length <= 150) {
+      // Long text - scale down gradually
+      const scaleFactor = 1.0 - ((text.length - 60) / 180) * 0.4;
+      finalSize = Math.max(minFontSize, idealFontSize * scaleFactor);
     } else {
-      // Very long text - minimum size with warning
-      calculatedSize = minFontSize;
-      
-      // Check if text exceeds capacity at minimum font size
-      const maxCharsAtMinSize = Math.floor((boxHeight / (minFontSize * lineHeight)) * 25); // ~25 chars per line at min size
-      if (text.length > maxCharsAtMinSize) {
-        toast.error(`Text too long! Maximum ${maxCharsAtMinSize} characters at minimum font size.`);
+      // Very long - minimum size with warning
+      finalSize = minFontSize;
+      const maxCapacity = Math.floor((boxHeight / (minFontSize * lineHeight)) * estimatedCharsPerLine);
+      if (text.length > maxCapacity) {
+        toast.error(`Text too long! Reduce content to fit in ${maxLines} lines.`);
       }
     }
     
-    setTastingNotesFontSize(Math.round(Math.max(minFontSize, Math.min(maxFontSize, calculatedSize))));
+    const newSize = Math.round(Math.max(minFontSize, Math.min(maxFontSize, finalSize)));
+    setTastingNotesFontSize(newSize);
+    
+    // Debug logging
+    console.log('Tasting Notes Font Calc:', {
+      textLength: text.length,
+      estimatedLines,
+      targetLines,
+      idealFontSize: Math.round(idealFontSize),
+      finalSize: newSize
+    });
   };
 
   const drawLabel = () => {
@@ -478,7 +489,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             <Textarea
                               ref={tastingNotesRef}
                               value={labelData.tastingNotes}
-                              onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
+                              onChange={(e) => {
+                                onLabelChange({ ...labelData, tastingNotes: e.target.value });
+                                // Trigger immediate font size recalculation
+                                setTimeout(() => calculateTastingNotesFontSize(), 10);
+                              }}
                               placeholder="Rich chocolate notes with hints of caramel..."
                               className="bg-transparent border-transparent text-center font-medium shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
                               style={{
