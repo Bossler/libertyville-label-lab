@@ -115,7 +115,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const maxLines = 3;
     
     if (text.length === 0) {
-      setTastingNotesFontSize(maxFontSize);
+      // For empty field, size to fit placeholder "Edit Coffee Description" on one line
+      // Estimate: 24 characters, container width ~280px, so ~11px per char max
+      const placeholderFontSize = Math.min(20, Math.floor(280 / 24 * 1.2)); // Conservative sizing
+      setTastingNotesFontSize(placeholderFontSize);
       return;
     }
 
