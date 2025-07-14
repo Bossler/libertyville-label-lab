@@ -400,53 +400,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 maxLength={200}
               />
             </div>
-
-            {/* Font and Color Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="fontFamily">Font Style</Label>
-                <Select
-                  value={labelData.fontFamily || 'serif'}
-                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select font" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontOptions.map((font) => (
-                      <SelectItem key={font.value} value={font.value}>
-                        <span style={{ fontFamily: font.value }}>{font.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="textColor">Text Color</Label>
-                <Select
-                  value={labelData.textColor || '#ffffff'}
-                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
-                >
-                  <SelectTrigger className="mt-1">
-                    <SelectValue placeholder="Select color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {colorOptions.map((color) => (
-                      <SelectItem key={color.value} value={color.value}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded border border-border" 
-                            style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
-                          />
-                          {color.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
           </div>
 
           {/* Image Upload */}
@@ -497,6 +450,53 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   className="border border-border rounded max-w-full h-auto"
                   style={{ maxWidth: '300px' }}
                 />
+              </div>
+            </div>
+
+            {/* Font and Color Selection - Right next to preview */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fontFamily">Font Style</Label>
+                <Select
+                  value={labelData.fontFamily || 'serif'}
+                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fontOptions.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <span style={{ fontFamily: font.value }}>{font.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="textColor">Text Color</Label>
+                <Select
+                  value={labelData.textColor || '#ffffff'}
+                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colorOptions.map((color) => (
+                      <SelectItem key={color.value} value={color.value}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded border border-border" 
+                            style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
+                          />
+                          {color.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
