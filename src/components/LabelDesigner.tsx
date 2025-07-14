@@ -210,16 +210,25 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // Skip drawing text elements since they're now overlay inputs
     // Coffee name and tasting notes are handled by overlay inputs
 
-    // Only draw static elements like roast date and branding
-
-    // Placeholder for roast date (admin field)
-    ctx.font = '14px serif';
-    ctx.fillStyle = '#cccccc';
-    ctx.fillText('Roast Date: MM/DD/YYYY', canvas.width / 2, canvas.height - 40);
-
-    // Libertyville Coffee Company branding
+    // JavaMania Coffee Roastery branding at bottom
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#333333';
+    
+    // Line 1: Roasted By JavaMania Coffee Roastery
+    ctx.font = 'bold 14px serif';
+    ctx.fillText('Roasted By JavaMania Coffee Roastery', canvas.width / 2, canvas.height - 60);
+    
+    // Line 2: Libertyville IL
     ctx.font = '12px serif';
-    ctx.fillText('Libertyville Coffee Company', canvas.width / 2, canvas.height - 20);
+    ctx.fillText('Libertyville IL', canvas.width / 2, canvas.height - 45);
+    
+    // Line 3: www.javamania.com
+    ctx.font = '12px serif';
+    ctx.fillText('www.javamania.com', canvas.width / 2, canvas.height - 30);
+    
+    // Line 4: 100% Arabica Coffee & Natural Flavors
+    ctx.font = '10px serif';
+    ctx.fillText('100% Arabica Coffee & Natural Flavors', canvas.width / 2, canvas.height - 15);
   };
 
   const drawWatermark = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
