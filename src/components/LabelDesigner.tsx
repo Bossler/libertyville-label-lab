@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Palette, Download, Image, Sparkles, Type, Bot } from 'lucide-react';
+import { Palette, Download, Image, Sparkles, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -344,12 +344,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-cream border-border shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Type className="w-5 h-5 text-primary" />
-            Label Design
-          </CardTitle>
-        </CardHeader>
         <CardContent className="space-y-6">
           {/* Text Fields */}
           <div className="space-y-4">

@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Coffee, Palette, Package, ShoppingBag } from 'lucide-react';
 import { LabelDesigner } from '@/components/LabelDesigner';
-import coffeeHero from '@/assets/coffee-hero.jpg';
 
 interface ProductInfo {
   name: string;
@@ -66,114 +60,13 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-warmth">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div 
-          className="h-64 bg-cover bg-center relative"
-          style={{ backgroundImage: `url(${coffeeHero})` }}
-        >
-          <div className="absolute inset-0 bg-gradient-coffee/70" />
-          <div className="relative z-10 flex items-center justify-center h-full text-center">
-            <div className="space-y-4">
-              <h1 className="text-4xl md:text-5xl font-bold text-primary-foreground">
-                Custom Coffee Label Designer
-              </h1>
-              <p className="text-xl text-primary-foreground/90 max-w-2xl mx-auto px-4">
-                Design a beautiful 4" × 6" label for your Java Mania coffee selection
-              </p>
-              <Badge variant="secondary" className="text-sm">
-                Professional Quality Printing • Shopify Integration • AI Assistance
-              </Badge>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="product" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 bg-card shadow-soft">
-            <TabsTrigger value="product" className="flex items-center gap-2">
-              <ShoppingBag className="w-4 h-4" />
-              <span className="hidden sm:inline">Product</span>
-            </TabsTrigger>
-            <TabsTrigger value="label" className="flex items-center gap-2">
-              <Palette className="w-4 h-4" />
-              <span className="hidden sm:inline">Label</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <div className="grid lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <TabsContent value="product" className="mt-0">
-                <Card className="bg-card border-border shadow-soft">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Coffee className="w-5 h-5" />
-                      Product Details
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {productInfo ? (
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Coffee Name</label>
-                            <p className="text-lg font-semibold">{productInfo.name}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Weight</label>
-                            <p className="text-lg">{productInfo.weight}</p>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Type</label>
-                            <Badge variant="secondary" className="capitalize">{productInfo.type}</Badge>
-                          </div>
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Grind</label>
-                            <Badge variant="secondary" className="capitalize">{productInfo.grind.replace('-', ' ')}</Badge>
-                          </div>
-                        </div>
-                        {productInfo.description && (
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Description</label>
-                            <p className="text-sm mt-1">{productInfo.description}</p>
-                          </div>
-                        )}
-                        {productInfo.price && (
-                          <div>
-                            <label className="text-sm font-medium text-muted-foreground">Price</label>
-                            <p className="text-lg font-semibold">${productInfo.price}</p>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8">
-                        <Coffee className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                        <p className="text-muted-foreground">
-                          No product information found. This page should be accessed from your Shopify store.
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              <TabsContent value="label" className="mt-0">
-                <LabelDesigner
-                  labelData={labelData}
-                  onLabelChange={setLabelData}
-                  productName={productInfo?.name}
-                  productInfo={productInfo}
-                />
-              </TabsContent>
-            </div>
-
-            {/* Sidebar */}
-            <div className="space-y-6">
-            </div>
-          </div>
-        </Tabs>
+        <LabelDesigner
+          labelData={labelData}
+          onLabelChange={setLabelData}
+          productName={productInfo?.name}
+          productInfo={productInfo}
+        />
       </div>
     </div>
   );
