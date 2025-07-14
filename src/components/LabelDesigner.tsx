@@ -311,6 +311,17 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
         throw new Error(error.message || 'Failed to generate image');
       }
 
+      if (data.error) {
+        // Handle specific OpenAI API errors
+        const errorMessage = data.details || data.error;
+        if (errorMessage.includes('content policy') || errorMessage.includes('policy')) {
+          toast.error('Content not allowed. Please try coffee-related imagery like beans, cups, roasting, or coffee shops.');
+        } else {
+          toast.error(`Image generation failed: ${errorMessage}`);
+        }
+        return;
+      }
+
       onLabelChange({
         ...labelData,
         backgroundImage: data.image
@@ -620,8 +631,16 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               />
             </div>
             
-            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
-              <strong>Note:</strong> The AI will automatically ensure no text or letters appear in the generated image. The image will be optimized for use as a coffee label background.
+            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded space-y-2">
+              <div>
+                <strong>✅ Good prompts:</strong> Coffee beans, cups, roasted coffee, brewing equipment, coffee shop interiors, steam, warm colors, wooden textures
+              </div>
+              <div>
+                <strong>❌ Avoid:</strong> People, medical imagery, violent content, copyrighted characters
+              </div>
+              <div>
+                <strong>Note:</strong> The AI will automatically ensure no text or letters appear in the generated image.
+              </div>
             </div>
           </div>
 

@@ -55,9 +55,15 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`OpenAI API error: ${response.status} - ${errorText}`);
-      return new Response(JSON.stringify({ error: `Image generation failed: ${response.status}` }), {
+      const errorData = await response.json().catch(() => null);
+      const errorMessage = errorData?.error?.message || `HTTP ${response.status}`;
+      console.error(`OpenAI API error: ${response.status} - ${errorMessage}`);
+      console.error('Full error data:', errorData);
+      
+      return new Response(JSON.stringify({ 
+        error: `Image generation failed: ${errorMessage}`,
+        details: errorData?.error?.message || 'Please try a different prompt focused on coffee-related imagery.'
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
