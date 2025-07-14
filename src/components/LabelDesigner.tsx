@@ -418,25 +418,40 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   const isAnyAILoading = Object.values(isGeneratingAI).some(Boolean) || isGeneratingImage;
 
-  const handleMouseDown = (e: React.MouseEvent, element: 'coffeeName' | 'tastingNotes') => {
+  // Unified event coordinate extraction
+  const getEventCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      return { clientX: touch.clientX, clientY: touch.clientY };
+    }
+    return { clientX: e.clientX, clientY: e.clientY };
+  };
+
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent, element: 'coffeeName' | 'tastingNotes') => {
     e.preventDefault();
+    e.stopPropagation();
     setIsDragging(element);
     
     const rect = e.currentTarget.getBoundingClientRect();
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (!canvasRect) return;
     
-    const offsetX = e.clientX - rect.left;
-    const offsetY = e.clientY - rect.top;
+    const coords = getEventCoordinates(e);
+    const offsetX = coords.clientX - rect.left;
+    const offsetY = coords.clientY - rect.top;
     setDragOffset({ x: offsetX, y: offsetY });
   };
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging || !canvasRef.current) return;
     
+    e.preventDefault();
+    e.stopPropagation();
+    
     const canvasRect = canvasRef.current.getBoundingClientRect();
-    const newX = Math.max(0, Math.min(e.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 344));
-    const newY = Math.max(0, Math.min(e.clientY - canvasRect.top - dragOffset.y, canvasRect.height - (isDragging === 'coffeeName' ? 64 : 72)));
+    const coords = getEventCoordinates(e);
+    const newX = Math.max(0, Math.min(coords.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 344));
+    const newY = Math.max(0, Math.min(coords.clientY - canvasRect.top - dragOffset.y, canvasRect.height - (isDragging === 'coffeeName' ? 64 : 72)));
     
     if (isDragging === 'coffeeName') {
       onLabelChange({
@@ -451,10 +466,20 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }
   };
 
-  const handleMouseUp = () => {
+  const handlePointerUp = () => {
     setIsDragging(null);
     setDragOffset({ x: 0, y: 0 });
   };
+
+  // Legacy mouse event handlers for backward compatibility
+  const handleMouseDown = (e: React.MouseEvent, element: 'coffeeName' | 'tastingNotes') => handlePointerDown(e, element);
+  const handleMouseMove = (e: React.MouseEvent) => handlePointerMove(e);
+  const handleMouseUp = () => handlePointerUp();
+
+  // Touch event handlers
+  const handleTouchStart = (e: React.TouchEvent, element: 'coffeeName' | 'tastingNotes') => handlePointerDown(e, element);
+  const handleTouchMove = (e: React.TouchEvent) => handlePointerMove(e);
+  const handleTouchEnd = () => handlePointerUp();
 
   const resetPositions = () => {
     onLabelChange({
@@ -480,12 +505,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               <div className="flex justify-center">
                 <div className="relative">
                   <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
-                    <div 
-                      className="relative"
-                      onMouseMove={handleMouseMove}
-                      onMouseUp={handleMouseUp}
-                      onMouseLeave={handleMouseUp}
-                    >
+                     <div 
+                       className="relative"
+                       style={{ touchAction: 'none' }}
+                       onMouseMove={handleMouseMove}
+                       onMouseUp={handleMouseUp}
+                       onMouseLeave={handleMouseUp}
+                       onTouchMove={handleTouchMove}
+                       onTouchEnd={handleTouchEnd}
+                     >
                       <canvas
                         ref={canvasRef}
                         className="border border-border rounded-lg max-w-full h-auto shadow-soft"
@@ -543,9 +571,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           top: labelData.coffeeNamePosition?.y || 20,
                           left: labelData.coffeeNamePosition?.x || 20,
                           right: labelData.coffeeNamePosition?.x ? 'auto' : 20,
-                          width: labelData.coffeeNamePosition?.x ? '344px' : 'auto'
+                          width: labelData.coffeeNamePosition?.x ? '344px' : 'auto',
+                          touchAction: 'none'
                         }}
                         onMouseDown={(e) => handleMouseDown(e, 'coffeeName')}
+                        onTouchStart={(e) => handleTouchStart(e, 'coffeeName')}
                       >
                         <div className="relative group-hover:ring-2 group-hover:ring-primary group-hover:shadow-lg rounded-lg transition-all duration-300 bg-gradient-to-r from-primary/5 to-primary/10 group-hover:from-primary/10 group-hover:to-primary/20 border border-primary/20 group-hover:border-primary/40">
                           {/* Drag Handle */}
@@ -651,9 +681,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           bottom: labelData.tastingNotesPosition?.y ? 'auto' : 80,
                           left: labelData.tastingNotesPosition?.x || 20,
                           right: labelData.tastingNotesPosition?.x ? 'auto' : 20,
-                          width: labelData.tastingNotesPosition?.x ? '344px' : 'auto'
+                          width: labelData.tastingNotesPosition?.x ? '344px' : 'auto',
+                          touchAction: 'none'
                         }}
                         onMouseDown={(e) => handleMouseDown(e, 'tastingNotes')}
+                        onTouchStart={(e) => handleTouchStart(e, 'tastingNotes')}
                       >
                         <div className="relative group-hover:ring-2 group-hover:ring-secondary group-hover:shadow-lg rounded-lg transition-all duration-300 bg-gradient-to-r from-secondary/5 to-secondary/10 group-hover:from-secondary/10 group-hover:to-secondary/20 border border-secondary/20 group-hover:border-secondary/40">
                           {/* Drag Handle */}
