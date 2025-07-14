@@ -6,7 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Palette, Download, Image, Sparkles, Type } from 'lucide-react';
+import { Palette, Download, Image, Sparkles, Type, Bot, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface LabelData {
   coffeeName: string;
@@ -16,20 +17,32 @@ interface LabelData {
   textColor?: string;
 }
 
+interface ProductInfo {
+  name: string;
+  weight: string;
+  type: 'regular' | 'decaf';
+  grind: 'whole-bean' | 'ground';
+  price?: string;
+  description?: string;
+}
+
 interface LabelDesignerProps {
   labelData: LabelData;
   onLabelChange: (data: LabelData) => void;
   productName?: string;
+  productInfo?: ProductInfo | null;
 }
 
 export const LabelDesigner: React.FC<LabelDesignerProps> = ({ 
   labelData, 
   onLabelChange,
-  productName 
+  productName,
+  productInfo 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewMode, setPreviewMode] = useState(false);
+  const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({});
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -188,6 +201,70 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }, 100);
   };
 
+  const generateAISuggestion = async (type: 'name' | 'notes' | 'preview') => {
+    if (!productInfo) {
+      toast.error('Product information is required to generate AI suggestions');
+      return;
+    }
+
+    setIsGeneratingAI(prev => ({ ...prev, [type]: true }));
+
+    // Simulate AI generation
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    const coffeeName = productInfo.name;
+    const coffeeType = productInfo.type;
+    const grindType = productInfo.grind;
+
+    let suggestion = '';
+
+    if (type === 'name') {
+      const nameTemplates = [
+        `Artisan ${coffeeName}`,
+        `Heritage ${coffeeName}`,
+        `${coffeeName} Reserve`,
+        `Premium ${coffeeName}`,
+        `Signature ${coffeeName}`,
+        `Handcrafted ${coffeeName}`
+      ];
+      suggestion = nameTemplates[Math.floor(Math.random() * nameTemplates.length)];
+      
+      // Auto-fill the suggestion
+      onLabelChange({ ...labelData, coffeeName: suggestion });
+      toast.success('AI Barista suggestion applied to coffee name!');
+      
+    } else if (type === 'notes') {
+      const noteTemplates = [
+        `This ${coffeeType} coffee delivers a rich, full-bodied experience with complex flavor notes and a smooth finish. Perfect for any time of day.`,
+        `A carefully selected ${coffeeName.toLowerCase()} offering balanced acidity and depth. The ${grindType.replace('-', ' ')} preparation enhances its natural characteristics.`,
+        `Experience the authentic taste of premium ${coffeeName.toLowerCase()}. This ${coffeeType} variety showcases traditional coffee craftsmanship with modern quality standards.`,
+        `Crafted for coffee enthusiasts, this ${coffeeName.toLowerCase()} blend provides exceptional flavor complexity with notes that evolve beautifully in each cup.`,
+      ];
+      suggestion = noteTemplates[Math.floor(Math.random() * noteTemplates.length)];
+      
+      // Auto-fill the suggestion
+      onLabelChange({ ...labelData, tastingNotes: suggestion });
+      toast.success('AI Barista suggestion applied to tasting notes!');
+      
+    } else if (type === 'preview') {
+      // Generate suggestions for both font and color
+      const fonts = ['serif', 'sans-serif', 'cursive', 'Georgia', 'Arial'];
+      const colors = ['#ffffff', '#8B4513', '#D2B48C', '#654321', '#000000'];
+      
+      const randomFont = fonts[Math.floor(Math.random() * fonts.length)];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      
+      onLabelChange({ 
+        ...labelData, 
+        fontFamily: randomFont,
+        textColor: randomColor 
+      });
+      toast.success('AI Barista suggestion applied to label style!');
+    }
+
+    setIsGeneratingAI(prev => ({ ...prev, [type]: false }));
+  };
+
   const generateAIImage = async () => {
     // Placeholder for AI image generation
     // In a real implementation, this would call an AI service
@@ -207,7 +284,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           {/* Text Fields */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="coffeeName">Coffee Name</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="coffeeName" className="flex-1">Coffee Name</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAISuggestion('name')}
+                  disabled={!productInfo || isGeneratingAI.name}
+                >
+                  {isGeneratingAI.name ? (
+                    <Sparkles className="w-3 h-3 animate-pulse" />
+                  ) : (
+                    <Bot className="w-3 h-3" />
+                  )}
+                  AI Barista
+                </Button>
+              </div>
               <Input
                 id="coffeeName"
                 value={labelData.coffeeName}
@@ -218,7 +310,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             </div>
 
             <div>
-              <Label htmlFor="tastingNotes">Tasting Notes & Description</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="tastingNotes" className="flex-1">Tasting Notes & Description</Label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAISuggestion('notes')}
+                  disabled={!productInfo || isGeneratingAI.notes}
+                >
+                  {isGeneratingAI.notes ? (
+                    <Sparkles className="w-3 h-3 animate-pulse" />
+                  ) : (
+                    <Bot className="w-3 h-3" />
+                  )}
+                  AI Barista
+                </Button>
+              </div>
               <Textarea
                 id="tastingNotes"
                 value={labelData.tastingNotes}
@@ -310,9 +417,24 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <Label>Label Preview</Label>
-              <Badge variant="secondary" className="text-xs">
-                4" × 6" • 96 DPI Preview
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="text-xs">
+                  4" × 6" • 96 DPI Preview
+                </Badge>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => generateAISuggestion('preview')}
+                  disabled={!productInfo || isGeneratingAI.preview}
+                >
+                  {isGeneratingAI.preview ? (
+                    <Sparkles className="w-3 h-3 animate-pulse" />
+                  ) : (
+                    <Bot className="w-3 h-3" />
+                  )}
+                  AI Barista
+                </Button>
+              </div>
             </div>
             
             <div className="flex justify-center">

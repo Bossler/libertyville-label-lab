@@ -3,9 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Coffee, Palette, Sparkles, Package, ShoppingBag } from 'lucide-react';
+import { Coffee, Palette, Package, ShoppingBag } from 'lucide-react';
 import { LabelDesigner } from '@/components/LabelDesigner';
-import { AIAssistant } from '@/components/AIAssistant';
 import coffeeHero from '@/assets/coffee-hero.jpg';
 
 interface ProductInfo {
@@ -21,6 +20,8 @@ interface LabelData {
   coffeeName: string;
   tastingNotes: string;
   backgroundImage?: string;
+  fontFamily?: string;
+  textColor?: string;
 }
 
 const Index = () => {
@@ -91,7 +92,7 @@ const Index = () => {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="product" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 bg-card shadow-soft">
+          <TabsList className="grid w-full grid-cols-2 bg-card shadow-soft">
             <TabsTrigger value="product" className="flex items-center gap-2">
               <ShoppingBag className="w-4 h-4" />
               <span className="hidden sm:inline">Product</span>
@@ -99,10 +100,6 @@ const Index = () => {
             <TabsTrigger value="label" className="flex items-center gap-2">
               <Palette className="w-4 h-4" />
               <span className="hidden sm:inline">Label</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              <span className="hidden sm:inline">AI Help</span>
             </TabsTrigger>
           </TabsList>
 
@@ -167,13 +164,7 @@ const Index = () => {
                   labelData={labelData}
                   onLabelChange={setLabelData}
                   productName={productInfo?.name}
-                />
-              </TabsContent>
-
-              <TabsContent value="ai" className="mt-0">
-                <AIAssistant
                   productInfo={productInfo}
-                  onSuggestion={handleSuggestion}
                 />
               </TabsContent>
             </div>
@@ -216,7 +207,7 @@ const Index = () => {
                   <div className="space-y-2">
                     <p><strong>1. Product Info:</strong> Comes from your Shopify product selection</p>
                     <p><strong>2. Design Label:</strong> Add name, tasting notes, and optional background image</p>
-                    <p><strong>3. Get AI Help:</strong> Use AI for creative suggestions (copy & paste manually)</p>
+                    <p><strong>3. AI Barista:</strong> Use AI buttons for creative suggestions for each field</p>
                     <p><strong>4. Complete Order:</strong> We'll print your custom label at professional quality</p>
                   </div>
                 </CardContent>
