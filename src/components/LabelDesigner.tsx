@@ -468,20 +468,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   return (
     <div className="min-h-screen bg-gradient-warmth p-4">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header */}
-        <Card className="bg-gradient-soft border-border shadow-soft">
-          <CardHeader className="text-center">
-            <CardTitle className="text-xl text-foreground flex items-center justify-center gap-2">
-              <Palette className="w-6 h-6 text-primary" />
-              Coffee Label Designer
-            </CardTitle>
-            {productName && (
-              <Badge variant="secondary" className="mt-2">
-                Designing for: {productName}
-              </Badge>
-            )}
-          </CardHeader>
-        </Card>
 
         {/* Top Section - Preview */}
         <Card className="bg-gradient-cream border-border shadow-elegant">
@@ -489,7 +475,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             <div className="text-center space-y-6">
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold text-foreground">Label Preview</h2>
-                <p className="text-muted-foreground">4" × 6" • Professional Quality</p>
               </div>
               
               <div className="flex justify-center">
