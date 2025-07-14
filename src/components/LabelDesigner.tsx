@@ -494,7 +494,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                                 // Trigger immediate font size recalculation
                                 setTimeout(() => calculateTastingNotesFontSize(), 10);
                               }}
-                              placeholder="Rich chocolate notes with hints of caramel..."
+                              placeholder="Edit Coffee Description"
                               className="bg-transparent border-transparent text-center font-medium shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
                               style={{
                                 fontSize: `${tastingNotesFontSize}px`,
