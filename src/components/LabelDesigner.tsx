@@ -19,6 +19,8 @@ interface LabelData {
   textColor?: string;
   coffeeNamePosition?: { x: number; y: number };
   tastingNotesPosition?: { x: number; y: number };
+  productInfoFontFamily?: string;
+  productInfoTextColor?: string;
 }
 
 interface ProductInfo {
@@ -209,6 +211,32 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const drawTextElements = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
     // Skip drawing text elements since they're now overlay inputs
     // Coffee name and tasting notes are handled by overlay inputs
+
+    // Product Information Section - 1" above branding text (96 pixels at 96 DPI)
+    if (productInfo) {
+      ctx.textAlign = 'center';
+      ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      ctx.shadowBlur = 2;
+      ctx.fillStyle = labelData.productInfoTextColor || '#000000';
+      
+      const productInfoY = canvas.height - 156; // 1" above branding text
+      const today = new Date();
+      const roastDate = today.toLocaleDateString();
+      
+      // Line 1: Weight and Grind Type
+      ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
+      ctx.fillText(`${productInfo.weight} • ${productInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'}`, canvas.width / 2, productInfoY);
+      
+      // Line 2: Regular/Decaf
+      ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
+      ctx.fillText(`${productInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, canvas.width / 2, productInfoY + 15);
+      
+      // Line 3: Roast Date
+      ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
+      ctx.fillText(`Roast Date: ${roastDate}`, canvas.width / 2, productInfoY + 30);
+    }
 
     // JavaMania Coffee Roastery branding at bottom - ensure it's always visible
     ctx.textAlign = 'center';
@@ -821,6 +849,64 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       Reset Text Positions
                     </Button>
                   </div>
+                  
+                  {/* Product Information Styling Controls */}
+                  {productInfo && (
+                    <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/50">
+                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+                        <Badge className="w-4 h-4" />
+                        Product Information Style
+                      </h4>
+                      <div className="flex gap-4">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">Font Family</Label>
+                          <Select 
+                            value={labelData.productInfoFontFamily || 'serif'} 
+                            onValueChange={(value) => onLabelChange({ ...labelData, productInfoFontFamily: value })}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {fontOptions.map(font => (
+                                <SelectItem key={font.value} value={font.value} className="text-xs">
+                                  <span style={{ fontFamily: font.value }}>{font.label}</span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">Text Color</Label>
+                          <Select 
+                            value={labelData.productInfoTextColor || '#000000'} 
+                            onValueChange={(value) => onLabelChange({ ...labelData, productInfoTextColor: value })}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded border border-border" style={{ backgroundColor: labelData.productInfoTextColor || '#000000' }}></div>
+                                <span className="text-xs">Color</span>
+                              </div>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {colorOptions.map(color => (
+                                <SelectItem key={color.value} value={color.value} className="text-xs">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-3 h-3 rounded border border-border" style={{ backgroundColor: color.value }}></div>
+                                    {color.label}
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-2">
+                        Shows: Weight • Grind Type • Regular/Decaf • Roast Date (auto-generated)
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
 
