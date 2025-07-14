@@ -171,47 +171,6 @@ const Index = () => {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Quick Stats */}
-              <Card className="bg-card border-border shadow-soft">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">Your Progress</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Product:</span>
-                    <Badge variant={productInfo ? "default" : "secondary"}>
-                      {productInfo ? 'Loaded' : 'Missing'}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Label Name:</span>
-                    <Badge variant={labelData.coffeeName ? "default" : "secondary"}>
-                      {labelData.coffeeName ? 'Set' : 'Empty'}
-                    </Badge>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-muted-foreground">Tasting Notes:</span>
-                    <Badge variant={labelData.tastingNotes ? "default" : "secondary"}>
-                      {labelData.tastingNotes ? 'Added' : 'Empty'}
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Instructions */}
-              <Card className="bg-card border-border shadow-soft">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg">How It Works</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 text-sm text-muted-foreground">
-                  <div className="space-y-2">
-                    <p><strong>1. Product Info:</strong> Comes from your Shopify product selection</p>
-                    <p><strong>2. Design Label:</strong> Add name, tasting notes, and optional background image</p>
-                    <p><strong>3. AI Barista:</strong> Use AI buttons for creative suggestions for each field</p>
-                    <p><strong>4. Complete Order:</strong> We'll print your custom label at professional quality</p>
-                  </div>
-                </CardContent>
-              </Card>
             </div>
           </div>
         </Tabs>

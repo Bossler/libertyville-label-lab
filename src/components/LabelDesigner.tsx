@@ -506,14 +506,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               </div>
             </div>
 
-            {/* Overlay zones explanation */}
-            <div className="text-xs text-muted-foreground space-y-1 bg-muted/50 p-3 rounded-lg">
-              <p><strong>Label Layout:</strong></p>
-              <p>• Coffee name appears at the top in large text</p>
-              <p>• Tasting notes in the center area</p>
-              <p>• Roast date will be added at bottom right (admin only)</p>
-              <p>• Company branding at bottom center</p>
-            </div>
 
             <Button
               variant="golden"
