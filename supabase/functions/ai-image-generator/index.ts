@@ -49,8 +49,7 @@ serve(async (req) => {
         prompt: finalPrompt,
         n: 1,
         size: '1024x1536', // 4:6 ratio to match label dimensions
-        quality: 'high',
-        response_format: 'b64_json'
+        quality: 'high'
       }),
     });
 
