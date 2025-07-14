@@ -220,9 +220,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.shadowBlur = 2;
     ctx.fillStyle = '#000000'; // Use black for better contrast
     
-    // Line 1: Roasted By JavaMania Coffee Roastery
+    // Line 1: Custom Roasted By JavaMania Coffee Roastery
     ctx.font = 'bold 14px serif';
-    ctx.fillText('Roasted By JavaMania Coffee Roastery', canvas.width / 2, canvas.height - 60);
+    ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', canvas.width / 2, canvas.height - 60);
     
     // Line 2: Libertyville IL
     ctx.font = '12px serif';
