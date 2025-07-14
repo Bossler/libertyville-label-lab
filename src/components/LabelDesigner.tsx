@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Palette, Download, Image, Sparkles, Bot } from 'lucide-react';
+import { Palette, Download, Image, Sparkles, Bot, Move, GripVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -552,7 +552,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       
                       {/* Coffee Name Overlay Input */}
                       <div 
-                        className="absolute cursor-move group"
+                        className="absolute cursor-move group hover:scale-105 transition-all duration-200"
                         style={{
                           top: labelData.coffeeNamePosition?.y || 20,
                           left: labelData.coffeeNamePosition?.x || 20,
@@ -561,14 +561,26 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         }}
                         onMouseDown={(e) => handleMouseDown(e, 'coffeeName')}
                       >
-                        <div className="group-hover:ring-2 group-hover:ring-primary/50 rounded-lg transition-all">
+                        <div className="relative group-hover:ring-2 group-hover:ring-primary group-hover:shadow-lg rounded-lg transition-all duration-300 bg-gradient-to-r from-primary/5 to-primary/10 group-hover:from-primary/10 group-hover:to-primary/20 border border-primary/20 group-hover:border-primary/40">
+                          {/* Drag Handle */}
+                          <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="bg-primary text-primary-foreground p-1 rounded-md shadow-lg">
+                              <Move className="w-4 h-4" />
+                            </div>
+                          </div>
+                          
+                          {/* Grip Pattern */}
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 transition-opacity duration-200">
+                            <GripVertical className="w-3 h-3 text-primary" />
+                          </div>
+                          
                           <Textarea
                             ref={textareaRef}
                             value={labelData.coffeeName}
                             onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
                             onBlur={calculateFontSize}
-                            placeholder="Edit Coffee Name"
-                            className="resize-none overflow-hidden border-2 border-dashed border-primary/30 bg-background/80 backdrop-blur text-center font-bold shadow-sm pointer-events-auto"
+                            placeholder="Edit Coffee Name • Drag to Move"
+                            className="resize-none overflow-hidden border-0 bg-transparent backdrop-blur text-center font-bold shadow-none pointer-events-auto pl-8"
                             style={{
                               fontSize: `${dynamicFontSize}px`,
                               fontFamily: labelData.fontFamily || 'serif',
@@ -588,12 +600,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           >
                             <Bot className="w-3 h-3" />
                           </Button>
+                          
+                          {/* Drag Indicator Label */}
+                          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full whitespace-nowrap">
+                              Drag to reposition
+                            </div>
+                          </div>
                         </div>
                       </div>
 
                       {/* Tasting Notes Overlay Input */}
                       <div 
-                        className="absolute cursor-move group"
+                        className="absolute cursor-move group hover:scale-105 transition-all duration-200"
                         style={{
                           top: labelData.tastingNotesPosition?.y || 'auto',
                           bottom: labelData.tastingNotesPosition?.y ? 'auto' : 80,
@@ -603,14 +622,26 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         }}
                         onMouseDown={(e) => handleMouseDown(e, 'tastingNotes')}
                       >
-                        <div className="group-hover:ring-2 group-hover:ring-secondary/50 rounded-lg transition-all">
+                        <div className="relative group-hover:ring-2 group-hover:ring-secondary group-hover:shadow-lg rounded-lg transition-all duration-300 bg-gradient-to-r from-secondary/5 to-secondary/10 group-hover:from-secondary/10 group-hover:to-secondary/20 border border-secondary/20 group-hover:border-secondary/40">
+                          {/* Drag Handle */}
+                          <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="bg-secondary text-secondary-foreground p-1 rounded-md shadow-lg">
+                              <Move className="w-4 h-4" />
+                            </div>
+                          </div>
+                          
+                          {/* Grip Pattern */}
+                          <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 transition-opacity duration-200">
+                            <GripVertical className="w-3 h-3 text-secondary" />
+                          </div>
+                          
                           <Textarea
                             ref={tastingNotesRef}
                             value={labelData.tastingNotes}
                             onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
                             onBlur={calculateTastingNotesFontSize}
-                            placeholder="Edit Coffee Description"
-                            className="resize-none overflow-hidden border-2 border-dashed border-secondary/30 bg-background/80 backdrop-blur text-center shadow-sm pointer-events-auto"
+                            placeholder="Edit Coffee Description • Drag to Move"
+                            className="resize-none overflow-hidden border-0 bg-transparent backdrop-blur text-center shadow-none pointer-events-auto pl-8"
                             style={{
                               fontSize: `${tastingNotesFontSize}px`,
                               fontFamily: labelData.fontFamily || 'serif',
@@ -630,6 +661,13 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           >
                             <Bot className="w-3 h-3" />
                           </Button>
+                          
+                          {/* Drag Indicator Label */}
+                          <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="bg-secondary text-secondary-foreground text-xs px-2 py-1 rounded-full whitespace-nowrap">
+                              Drag to reposition
+                            </div>
+                          </div>
                         </div>
                       </div>
 
