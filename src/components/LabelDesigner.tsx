@@ -339,6 +339,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     setIsGeneratingImage(false);
   };
 
+  const isAnyAILoading = Object.values(isGeneratingAI).some(Boolean) || isGeneratingImage;
+
   return (
     <div className="space-y-6">
       <Card className="bg-gradient-cream border-border shadow-soft">
@@ -648,6 +650,24 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* AI Loading Overlay */}
+      {isAnyAILoading && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card border border-border rounded-lg p-6 shadow-lg max-w-sm mx-4">
+            <div className="flex flex-col items-center space-y-4">
+              <div className="relative">
+                <div className="w-12 h-12 border-4 border-primary/20 rounded-full"></div>
+                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+              </div>
+              <div className="text-center">
+                <h3 className="font-semibold text-foreground mb-1">AI Barista at Work</h3>
+                <p className="text-sm text-muted-foreground">Please wait, we're brewing something up!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
