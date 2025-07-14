@@ -73,7 +73,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const suggestion = data.choices[0].message.content.trim();
+    const suggestion = data.choices[0].message.content.trim().replace(/^["']|["']$/g, '');
 
     console.log(`AI suggestion generated for type: ${type}`);
 
