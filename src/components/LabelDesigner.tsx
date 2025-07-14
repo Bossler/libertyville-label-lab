@@ -431,228 +431,193 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           </CardHeader>
         </Card>
 
-        {/* Top Section - Preview with Background Options */}
+        {/* Top Section - Preview */}
         <Card className="bg-gradient-cream border-border shadow-elegant">
           <CardContent className="p-8">
-            <div className="grid lg:grid-cols-3 gap-8">
-              {/* Preview Section */}
-              <div className="lg:col-span-2">
-                <div className="text-center space-y-6">
-                  <div className="space-y-2">
-                    <h2 className="text-2xl font-bold text-foreground">Label Preview</h2>
-                    <p className="text-muted-foreground">4" × 6" • Professional Quality</p>
-                  </div>
-                  
-                  <div className="flex justify-center">
-                    <div className="relative">
-                      <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
-                        <canvas
-                          ref={canvasRef}
-                          className="border border-border rounded-lg max-w-full h-auto shadow-soft"
-                          style={{ maxWidth: '500px', height: 'auto' }}
-                        />
-                        
-                        {/* Editable Coffee Name Overlay */}
-                        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-md">
-                          <div className="relative flex items-start">
-                            <Textarea
-                              ref={textareaRef}
-                              value={labelData.coffeeName}
-                              onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
-                              placeholder="Edit Coffee Name"
-                              className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
-                              style={{
-                                fontSize: `${dynamicFontSize}px`,
-                                fontFamily: labelData.fontFamily || 'serif',
-                                color: labelData.textColor || '#000000',
-                                textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
-                                lineHeight: '1.1',
-                                height: `64px`,
-                                maxHeight: `64px`
-                              }}
-                              maxLength={120}
-                              rows={2}
-                              onKeyDown={(e) => {
-                                // Prevent line breaks that would create a third line
-                                if (e.key === 'Enter') {
-                                  e.preventDefault();
-                                }
-                              }}
-                              onPaste={(e) => {
-                                // Handle paste events to prevent line breaks
-                                e.preventDefault();
-                                const paste = e.clipboardData.getData('text').replace(/\r?\n|\r/g, ' ');
-                                const newValue = labelData.coffeeName + paste;
-                                if (newValue.length <= 120) {
-                                  onLabelChange({ ...labelData, coffeeName: newValue });
-                                }
-                              }}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleAIButtonClick('name')}
-                              disabled={isGeneratingAI.name}
-                              className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
-                            >
-                              {isGeneratingAI.name ? (
-                                <Sparkles className="w-4 h-4 animate-pulse text-primary" />
-                              ) : (
-                                <Bot className="w-4 h-4 text-primary" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {/* Editable Tasting Notes Overlay */}
-                        <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-4/5 max-w-lg">
-                          <div className="relative flex items-start">
-                            <Textarea
-                              ref={tastingNotesRef}
-                              value={labelData.tastingNotes}
-                              onChange={(e) => {
-                                onLabelChange({ ...labelData, tastingNotes: e.target.value });
-                                // Trigger immediate font size recalculation
-                                setTimeout(() => calculateTastingNotesFontSize(), 10);
-                              }}
-                              placeholder="Edit Coffee Description"
-                              className="bg-transparent border-transparent text-center font-medium shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
-                              style={{
-                                fontSize: `${tastingNotesFontSize}px`,
-                                fontFamily: labelData.fontFamily || 'serif',
-                                color: labelData.textColor || '#000000',
-                                textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
-                                lineHeight: '1.2',
-                                height: `72px`,
-                                maxHeight: `72px`
-                              }}
-                              maxLength={300}
-                              rows={3}
-                              onKeyDown={(e) => {
-                                // Allow natural line breaks but prevent excessive lines
-                                const currentLines = e.currentTarget.value.split('\n').length;
-                                if (e.key === 'Enter' && currentLines >= 3) {
-                                  e.preventDefault();
-                                }
-                              }}
-                              onPaste={(e) => {
-                                // Handle paste events but allow some line breaks
-                                e.preventDefault();
-                                const paste = e.clipboardData.getData('text');
-                                const lines = paste.split(/\r?\n|\r/);
-                                const limitedText = lines.slice(0, 3).join('\n');
-                                const newValue = labelData.tastingNotes + limitedText;
-                                onLabelChange({ ...labelData, tastingNotes: newValue.substring(0, 300) });
-                              }}
-                            />
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleAIButtonClick('notes')}
-                              disabled={isGeneratingAI.notes}
-                              className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
-                            >
-                              {isGeneratingAI.notes ? (
-                                <Sparkles className="w-4 h-4 animate-pulse text-primary" />
-                              ) : (
-                                <Bot className="w-4 h-4 text-primary" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
-                        Live Preview
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    variant="golden"
-                    onClick={downloadPreview}
-                    className="w-full max-w-sm hover-scale transition-all duration-300"
-                    size="lg"
-                  >
-                    <Download className="w-5 h-5 mr-2" />
-                    Download Preview
-                  </Button>
-                </div>
+            <div className="text-center space-y-6">
+              <div className="space-y-2">
+                <h2 className="text-2xl font-bold text-foreground">Label Preview</h2>
+                <p className="text-muted-foreground">4" × 6" • Professional Quality</p>
               </div>
-
-              {/* Background Options Section */}
-              <div className="lg:col-span-1">
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-semibold text-foreground">Background Options</h3>
-                    <p className="text-sm text-muted-foreground">Customize your label background</p>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {/* Upload Background */}
-                    <div>
-                      <Label htmlFor="background-upload" className="text-sm font-medium">Upload Image</Label>
-                      <div className="mt-2">
-                        <input
-                          ref={fileInputRef}
-                          type="file"
-                          id="background-upload"
-                          accept="image/*"
-                          onChange={handleImageUpload}
-                          className="hidden"
-                        />
-                        <Button
-                          onClick={() => fileInputRef.current?.click()}
-                          variant="cream"
-                          className="w-full hover-scale"
-                          size="lg"
-                        >
-                          <Image className="w-4 h-4 mr-2" />
-                          Upload Background
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* AI Image Generation */}
-                    <div>
-                      <Label className="text-sm font-medium">AI Generated</Label>
-                      <div className="mt-2">
-                        <Button
-                          onClick={generateAIImage}
-                          variant="outline"
-                          disabled={isGeneratingImage}
-                          className="w-full hover-scale"
-                          size="lg"
-                        >
-                          {isGeneratingImage ? (
-                            <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-2" />
-                          ) : (
-                            <Sparkles className="w-4 h-4 mr-2" />
-                          )}
-                          Generate AI Background
-                        </Button>
-                      </div>
-                    </div>
-
-                    {/* Remove Background */}
-                    {labelData.backgroundImage && (
-                      <div>
+              
+              <div className="flex justify-center">
+                <div className="relative">
+                  <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
+                    <canvas
+                      ref={canvasRef}
+                      className="border border-border rounded-lg max-w-full h-auto shadow-soft"
+                      style={{ maxWidth: '500px', height: 'auto' }}
+                    />
+                    
+                    {/* Background Options Overlay */}
+                    <div className="absolute top-4 right-4 flex flex-col gap-2">
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                      <Button
+                        onClick={() => fileInputRef.current?.click()}
+                        variant="secondary"
+                        size="sm"
+                        className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
+                      >
+                        <Image className="w-4 h-4 mr-1" />
+                        Upload
+                      </Button>
+                      <Button
+                        onClick={generateAIImage}
+                        variant="secondary"
+                        size="sm"
+                        disabled={isGeneratingImage}
+                        className="bg-background/90 hover:bg-background shadow-lg backdrop-blur"
+                      >
+                        {isGeneratingImage ? (
+                          <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-1" />
+                        ) : (
+                          <Sparkles className="w-4 h-4 mr-1" />
+                        )}
+                        AI Gen
+                      </Button>
+                      {labelData.backgroundImage && (
                         <Button
                           onClick={() => onLabelChange({ ...labelData, backgroundImage: undefined })}
-                          variant="outline"
-                          className="w-full"
+                          variant="destructive"
+                          size="sm"
+                          className="bg-background/90 hover:bg-destructive/90 shadow-lg backdrop-blur"
                         >
-                          Remove Background
+                          Remove
                         </Button>
-                        <div className="text-center mt-2">
-                          <Badge variant="secondary" className="text-xs">
-                            ✓ Background image applied
-                          </Badge>
-                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Editable Coffee Name Overlay */}
+                    <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-md">
+                      <div className="relative flex items-start">
+                        <Textarea
+                          ref={textareaRef}
+                          value={labelData.coffeeName}
+                          onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
+                          placeholder="Edit Coffee Name"
+                          className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
+                          style={{
+                            fontSize: `${dynamicFontSize}px`,
+                            fontFamily: labelData.fontFamily || 'serif',
+                            color: labelData.textColor || '#000000',
+                            textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+                            lineHeight: '1.1',
+                            height: `64px`,
+                            maxHeight: `64px`
+                          }}
+                          maxLength={120}
+                          rows={2}
+                          onKeyDown={(e) => {
+                            // Prevent line breaks that would create a third line
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            // Handle paste events to prevent line breaks
+                            e.preventDefault();
+                            const paste = e.clipboardData.getData('text').replace(/\r?\n|\r/g, ' ');
+                            const newValue = labelData.coffeeName + paste;
+                            if (newValue.length <= 120) {
+                              onLabelChange({ ...labelData, coffeeName: newValue });
+                            }
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAIButtonClick('name')}
+                          disabled={isGeneratingAI.name}
+                          className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
+                        >
+                          {isGeneratingAI.name ? (
+                            <Sparkles className="w-4 h-4 animate-pulse text-primary" />
+                          ) : (
+                            <Bot className="w-4 h-4 text-primary" />
+                          )}
+                        </Button>
                       </div>
-                    )}
+                    </div>
+
+                    {/* Editable Tasting Notes Overlay */}
+                    <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-4/5 max-w-lg">
+                      <div className="relative flex items-start">
+                        <Textarea
+                          ref={tastingNotesRef}
+                          value={labelData.tastingNotes}
+                          onChange={(e) => {
+                            onLabelChange({ ...labelData, tastingNotes: e.target.value });
+                            // Trigger immediate font size recalculation
+                            setTimeout(() => calculateTastingNotesFontSize(), 10);
+                          }}
+                          placeholder="Edit Coffee Description"
+                          className="bg-transparent border-transparent text-center font-medium shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
+                          style={{
+                            fontSize: `${tastingNotesFontSize}px`,
+                            fontFamily: labelData.fontFamily || 'serif',
+                            color: labelData.textColor || '#000000',
+                            textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
+                            lineHeight: '1.2',
+                            height: `72px`,
+                            maxHeight: `72px`
+                          }}
+                          maxLength={300}
+                          rows={3}
+                          onKeyDown={(e) => {
+                            // Allow natural line breaks but prevent excessive lines
+                            const currentLines = e.currentTarget.value.split('\n').length;
+                            if (e.key === 'Enter' && currentLines >= 3) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onPaste={(e) => {
+                            // Handle paste events but allow some line breaks
+                            e.preventDefault();
+                            const paste = e.clipboardData.getData('text');
+                            const lines = paste.split(/\r?\n|\r/);
+                            const limitedText = lines.slice(0, 3).join('\n');
+                            const newValue = labelData.tastingNotes + limitedText;
+                            onLabelChange({ ...labelData, tastingNotes: newValue.substring(0, 300) });
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleAIButtonClick('notes')}
+                          disabled={isGeneratingAI.notes}
+                          className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
+                        >
+                          {isGeneratingAI.notes ? (
+                            <Sparkles className="w-4 h-4 animate-pulse text-primary" />
+                          ) : (
+                            <Bot className="w-4 h-4 text-primary" />
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
+                      Live Preview
+                    </div>
                   </div>
                 </div>
               </div>
+
+              <Button
+                variant="golden"
+                onClick={downloadPreview}
+                className="w-full max-w-sm hover-scale transition-all duration-300"
+                size="lg"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download Preview
+              </Button>
             </div>
           </CardContent>
         </Card>
