@@ -29,10 +29,10 @@ serve(async (req) => {
     
     if (type === 'name') {
       const productContext = productInfo ? `for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight})` : 'for this coffee product';
-      systemPrompt = `You are an expert coffee branding specialist. Help improve coffee names ${productContext}. Current name: "${currentContent}". User request: "${request}". Provide only the improved name, nothing else.`;
+      systemPrompt = `You are an expert coffee branding specialist. Help improve coffee names ${productContext}. Current name: "${currentContent}". User request: "${request}". IMPORTANT: The coffee name must be 45 characters or less. Provide only the improved name, nothing else.`;
     } else if (type === 'notes') {
       const productContext = productInfo ? `for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight})` : 'for this coffee product';
-      systemPrompt = `You are an expert coffee taster and copywriter. Help improve tasting notes ${productContext}. Current notes: "${currentContent}". User request: "${request}". Provide only the improved tasting notes, nothing else.`;
+      systemPrompt = `You are an expert coffee taster and copywriter. Help improve tasting notes ${productContext}. Current notes: "${currentContent}". User request: "${request}". IMPORTANT: The tasting notes must be 200 characters or less. Provide only the improved tasting notes, nothing else.`;
     } else if (type === 'preview') {
       systemPrompt = `You are a label design expert. Current style: ${currentContent}. User request: "${request}". Respond with ONLY a JSON object like {"fontFamily": "serif", "textColor": "#ffffff"} with improved values.`;
     } else {

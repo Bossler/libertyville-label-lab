@@ -322,6 +322,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
                 placeholder={productName || "Enter coffee name"}
                 className="mt-1"
+                maxLength={45}
               />
             </div>
 
@@ -348,6 +349,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
                 placeholder="Describe the flavor profile, aroma, and characteristics..."
                 className="mt-1 min-h-[100px]"
+                maxLength={200}
               />
             </div>
 
