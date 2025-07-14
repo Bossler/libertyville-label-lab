@@ -123,11 +123,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
     const fontFamily = labelData.fontFamily || 'serif';
 
-    // Coffee name (title)
-    ctx.font = `bold 32px ${fontFamily}`;
-    const coffeeName = labelData.coffeeName || productName || 'Custom Coffee';
-    ctx.fillText(coffeeName, canvas.width / 2, 80);
-    ctx.strokeText(coffeeName, canvas.width / 2, 80);
+    // Skip drawing coffee name on canvas since it's now an overlay input
+    // Coffee name is handled by the input overlay
 
     // Tasting notes
     if (labelData.tastingNotes) {
@@ -365,13 +362,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         />
                         
                         {/* Editable Coffee Name Overlay */}
-                        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-4/5 max-w-sm">
+                        <div className="absolute top-16 left-1/2 transform -translate-x-1/2 w-4/5 max-w-md">
                           <div className="relative flex items-center">
                             <Input
                               value={labelData.coffeeName}
                               onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
                               placeholder="Edit Coffee Name"
-                              className="bg-background/90 backdrop-blur border-primary/30 text-center text-xl font-bold shadow-lg pr-12 hover:bg-background/95 focus:bg-background transition-all"
+                              className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 pr-10"
+                              style={{
+                                fontSize: '2rem',
+                                fontFamily: labelData.fontFamily || 'serif',
+                                color: labelData.textColor || '#ffffff',
+                                textShadow: '1px 1px 2px rgba(0,0,0,0.8)'
+                              }}
                               maxLength={45}
                             />
                             <Button
@@ -379,7 +382,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                               size="sm"
                               onClick={() => handleAIButtonClick('name')}
                               disabled={isGeneratingAI.name}
-                              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-primary/10"
+                              className="absolute right-0 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
                             >
                               {isGeneratingAI.name ? (
                                 <Sparkles className="w-4 h-4 animate-pulse text-primary" />
