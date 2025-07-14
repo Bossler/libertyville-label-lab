@@ -343,11 +343,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-warmth p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="grid lg:grid-cols-2 gap-8 h-full">
-          {/* Left Side - Preview Panel */}
-          <div className="order-2 lg:order-1">
-            <Card className="bg-gradient-cream border-border shadow-elegant h-full">
+      <div className="max-w-6xl mx-auto">
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Left Side - Large Preview Panel */}
+          <div className="lg:col-span-2 order-2 lg:order-1">
+            <Card className="bg-gradient-cream border-border shadow-elegant">
               <CardContent className="p-8">
                 <div className="text-center space-y-6">
                   <div className="space-y-2">
@@ -361,8 +361,34 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         <canvas
                           ref={canvasRef}
                           className="border border-border rounded-lg max-w-full h-auto shadow-soft"
-                          style={{ maxWidth: '320px', height: 'auto' }}
+                          style={{ maxWidth: '500px', height: 'auto' }}
                         />
+                        
+                        {/* Editable Coffee Name Overlay */}
+                        <div className="absolute top-12 left-1/2 transform -translate-x-1/2 w-4/5 max-w-sm">
+                          <div className="relative flex items-center">
+                            <Input
+                              value={labelData.coffeeName}
+                              onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
+                              placeholder="Edit Coffee Name"
+                              className="bg-background/90 backdrop-blur border-primary/30 text-center text-xl font-bold shadow-lg pr-12 hover:bg-background/95 focus:bg-background transition-all"
+                              maxLength={45}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAIButtonClick('name')}
+                              disabled={isGeneratingAI.name}
+                              className="absolute right-1 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 hover:bg-primary/10"
+                            >
+                              {isGeneratingAI.name ? (
+                                <Sparkles className="w-4 h-4 animate-pulse text-primary" />
+                              ) : (
+                                <Bot className="w-4 h-4 text-primary" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                       <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
                         Live Preview
@@ -386,46 +412,18 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
           {/* Right Side - Controls Panel */}
           <div className="order-1 lg:order-2 space-y-6">
-            {/* Text Content Section */}
+            {/* Tasting Notes Section */}
             <Card className="bg-card border-border shadow-soft">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Bot className="w-5 h-5 text-primary" />
-                  Text Content
+                  Tasting Notes
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
+              <CardContent className="space-y-4">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <Label htmlFor="coffeeName" className="flex-1 font-medium">Coffee Name</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAIButtonClick('name')}
-                      disabled={isGeneratingAI.name}
-                      className="hover-scale"
-                    >
-                      {isGeneratingAI.name ? (
-                        <Sparkles className="w-3 h-3 animate-pulse" />
-                      ) : (
-                        <Bot className="w-3 h-3" />
-                      )}
-                      AI Enhance
-                    </Button>
-                  </div>
-                  <Input
-                    id="coffeeName"
-                    value={labelData.coffeeName}
-                    onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
-                    placeholder={productName || "Enter coffee name"}
-                    className="text-lg font-medium"
-                    maxLength={45}
-                  />
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Label htmlFor="tastingNotes" className="flex-1 font-medium">Tasting Notes</Label>
+                    <Label htmlFor="tastingNotes" className="flex-1 font-medium">Description</Label>
                     <Button
                       variant="outline"
                       size="sm"
@@ -456,13 +454,13 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             {/* Style & Appearance Section */}
             <Card className="bg-card border-border shadow-soft">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Palette className="w-5 h-5 text-primary" />
                   Style & Appearance
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <Label htmlFor="fontFamily" className="font-medium mb-2 block">Font Style</Label>
                     <Select
@@ -513,7 +511,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             {/* Background Image Section */}
             <Card className="bg-card border-border shadow-soft">
               <CardHeader className="pb-4">
-                <CardTitle className="text-xl flex items-center gap-2">
+                <CardTitle className="text-lg flex items-center gap-2">
                   <Image className="w-5 h-5 text-primary" />
                   Background Image
                 </CardTitle>
@@ -523,7 +521,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   <p className="text-sm text-muted-foreground">
                     Add a custom background image to make your label unique
                   </p>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     <Button
                       variant="cream"
                       onClick={() => fileInputRef.current?.click()}
