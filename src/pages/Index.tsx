@@ -59,8 +59,8 @@ const Index = () => {
   }, []);
 
   const handleSuggestion = (suggestion: string, type: 'name' | 'notes') => {
-    // This is called from AI Assistant but doesn't auto-fill
-    // Users must manually copy and paste suggestions
+    // AI Assistant suggestions - users must manually copy and paste
+    console.log('AI suggestion generated:', { suggestion, type });
   };
 
   return (
