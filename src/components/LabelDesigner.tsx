@@ -47,6 +47,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({});
   const [aiDialogOpen, setAiDialogOpen] = useState<string | null>(null);
   const [userRequest, setUserRequest] = useState('');
+  const [imagePrompt, setImagePrompt] = useState('');
+  const [imageStyle, setImageStyle] = useState('');
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -282,9 +285,47 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   };
 
   const generateAIImage = async () => {
-    // Placeholder for AI image generation
-    // In a real implementation, this would call an AI service
-    alert('AI image generation coming soon! For now, please upload your own image.');
+    setAiDialogOpen('image');
+    setImagePrompt('');
+    setImageStyle('');
+  };
+
+  const handleImageGeneration = async () => {
+    if (!imagePrompt.trim()) {
+      toast.error('Please describe the background image you want');
+      return;
+    }
+
+    setIsGeneratingImage(true);
+    setAiDialogOpen(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-image-generator', {
+        body: {
+          prompt: imagePrompt,
+          style: imageStyle
+        }
+      });
+
+      if (error) {
+        throw new Error(error.message || 'Failed to generate image');
+      }
+
+      onLabelChange({
+        ...labelData,
+        backgroundImage: data.image
+      });
+
+      toast.success('AI generated your background image!');
+      setImagePrompt('');
+      setImageStyle('');
+
+    } catch (error) {
+      console.error('AI Image generation error:', error);
+      toast.error('Failed to generate image. Please try again.');
+    }
+
+    setIsGeneratingImage(false);
   };
 
   return (
@@ -539,6 +580,65 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Improve with AI
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* AI Image Generation Dialog */}
+      <Dialog open={aiDialogOpen === 'image'} onOpenChange={(open) => !open && setAiDialogOpen(null)}>
+        <DialogContent className="bg-background border-border">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-primary" />
+              AI Background Image Generator
+            </DialogTitle>
+            <DialogDescription>
+              Describe the background image you'd like for your coffee label. The AI will generate an image without any text.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="imagePrompt">Image Description</Label>
+              <Textarea
+                id="imagePrompt"
+                value={imagePrompt}
+                onChange={(e) => setImagePrompt(e.target.value)}
+                placeholder="e.g., Coffee beans scattered on rustic wood, warm lighting, cozy coffee shop atmosphere, vintage coffee plantation"
+                className="min-h-[80px]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="imageStyle">Style (Optional)</Label>
+              <Input
+                id="imageStyle"
+                value={imageStyle}
+                onChange={(e) => setImageStyle(e.target.value)}
+                placeholder="e.g., watercolor, vintage, minimalist, photographic, artistic"
+              />
+            </div>
+            
+            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
+              <strong>Note:</strong> The AI will automatically ensure no text or letters appear in the generated image. The image will be optimized for use as a coffee label background.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAiDialogOpen(null)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleImageGeneration}
+              disabled={!imagePrompt.trim() || isGeneratingImage}
+            >
+              {isGeneratingImage ? (
+                <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+              ) : (
+                <Sparkles className="w-4 h-4 mr-2" />
+              )}
+              {isGeneratingImage ? 'Generating...' : 'Generate Image'}
             </Button>
           </DialogFooter>
         </DialogContent>
