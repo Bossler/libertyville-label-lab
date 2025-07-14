@@ -342,129 +342,134 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const isAnyAILoading = Object.values(isGeneratingAI).some(Boolean) || isGeneratingImage;
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-gradient-cream border-border shadow-soft">
-        <CardContent className="space-y-6">
-          {/* Text Fields */}
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="coffeeName" className="flex-1">Coffee Name</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAIButtonClick('name')}
-                  disabled={isGeneratingAI.name}
-                >
-                  {isGeneratingAI.name ? (
-                    <Sparkles className="w-3 h-3 animate-pulse" />
-                  ) : (
-                    <Bot className="w-3 h-3" />
-                  )}
-                  AI Barista
-                </Button>
-              </div>
-              <Input
-                id="coffeeName"
-                value={labelData.coffeeName}
-                onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
-                placeholder={productName || "Enter coffee name"}
-                className="mt-1"
-                maxLength={45}
-              />
-            </div>
+    <div className="min-h-screen bg-gradient-warmth p-4">
+      <div className="max-w-7xl mx-auto">
+        <div className="grid lg:grid-cols-2 gap-8 h-full">
+          {/* Left Side - Preview Panel */}
+          <div className="order-2 lg:order-1">
+            <Card className="bg-gradient-cream border-border shadow-elegant h-full">
+              <CardContent className="p-8">
+                <div className="text-center space-y-6">
+                  <div className="space-y-2">
+                    <h2 className="text-2xl font-bold text-foreground">Label Preview</h2>
+                    <p className="text-muted-foreground">4" × 6" • Professional Quality</p>
+                  </div>
+                  
+                  <div className="flex justify-center">
+                    <div className="relative">
+                      <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
+                        <canvas
+                          ref={canvasRef}
+                          className="border border-border rounded-lg max-w-full h-auto shadow-soft"
+                          style={{ maxWidth: '320px', height: 'auto' }}
+                        />
+                      </div>
+                      <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
+                        Live Preview
+                      </div>
+                    </div>
+                  </div>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="tastingNotes" className="flex-1">Tasting Notes & Description</Label>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAIButtonClick('notes')}
-                  disabled={isGeneratingAI.notes}
-                >
-                  {isGeneratingAI.notes ? (
-                    <Sparkles className="w-3 h-3 animate-pulse" />
-                  ) : (
-                    <Bot className="w-3 h-3" />
-                  )}
-                  AI Barista
-                </Button>
-              </div>
-              <Textarea
-                id="tastingNotes"
-                value={labelData.tastingNotes}
-                onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
-                placeholder="Describe the flavor profile, aroma, and characteristics..."
-                className="mt-1 min-h-[100px]"
-                maxLength={200}
-              />
-            </div>
+                  <Button
+                    variant="golden"
+                    onClick={downloadPreview}
+                    className="w-full max-w-sm hover-scale transition-all duration-300"
+                    size="lg"
+                  >
+                    <Download className="w-5 h-5 mr-2" />
+                    Download Preview
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
 
-          {/* Image Upload */}
-          <div className="space-y-3">
-            <Label>Background Image (Optional)</Label>
-            <div className="flex gap-2">
-              <Button
-                variant="cream"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex-1"
-              >
-                <Image className="w-4 h-4 mr-2" />
-                Upload Image
-              </Button>
-              <Button
-                variant="outline"
-                onClick={generateAIImage}
-                className="flex-1"
-              >
-                <Sparkles className="w-4 h-4 mr-2" />
-                AI Generate
-              </Button>
-            </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
-          </div>
-
-          {/* Canvas Preview */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label>Label Preview</Label>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  4" × 6" • 96 DPI Preview
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="flex flex-col lg:flex-row gap-6 items-start">
-              {/* Canvas Preview - smaller and responsive */}
-              <div className="flex-shrink-0">
-                <div className="border-2 border-border rounded-lg p-3 bg-card shadow-soft">
-                  <canvas
-                    ref={canvasRef}
-                    className="border border-border rounded max-w-full h-auto"
-                    style={{ maxWidth: '200px' }}
+          {/* Right Side - Controls Panel */}
+          <div className="order-1 lg:order-2 space-y-6">
+            {/* Text Content Section */}
+            <Card className="bg-card border-border shadow-soft">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Bot className="w-5 h-5 text-primary" />
+                  Text Content
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="coffeeName" className="flex-1 font-medium">Coffee Name</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAIButtonClick('name')}
+                      disabled={isGeneratingAI.name}
+                      className="hover-scale"
+                    >
+                      {isGeneratingAI.name ? (
+                        <Sparkles className="w-3 h-3 animate-pulse" />
+                      ) : (
+                        <Bot className="w-3 h-3" />
+                      )}
+                      AI Enhance
+                    </Button>
+                  </div>
+                  <Input
+                    id="coffeeName"
+                    value={labelData.coffeeName}
+                    onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
+                    placeholder={productName || "Enter coffee name"}
+                    className="text-lg font-medium"
+                    maxLength={45}
                   />
                 </div>
-              </div>
 
-              {/* Font and Color Selection - Right next to preview */}
-              <div className="flex-1 space-y-4">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Label htmlFor="tastingNotes" className="flex-1 font-medium">Tasting Notes</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleAIButtonClick('notes')}
+                      disabled={isGeneratingAI.notes}
+                      className="hover-scale"
+                    >
+                      {isGeneratingAI.notes ? (
+                        <Sparkles className="w-3 h-3 animate-pulse" />
+                      ) : (
+                        <Bot className="w-3 h-3" />
+                      )}
+                      AI Enhance
+                    </Button>
+                  </div>
+                  <Textarea
+                    id="tastingNotes"
+                    value={labelData.tastingNotes}
+                    onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
+                    placeholder="Rich chocolate notes with hints of caramel and a smooth finish..."
+                    className="min-h-[120px] resize-none"
+                    maxLength={200}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Style & Appearance Section */}
+            <Card className="bg-card border-border shadow-soft">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Palette className="w-5 h-5 text-primary" />
+                  Style & Appearance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="fontFamily">Font Style</Label>
+                    <Label htmlFor="fontFamily" className="font-medium mb-2 block">Font Style</Label>
                     <Select
                       value={labelData.fontFamily || 'serif'}
                       onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
                     >
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="hover:border-primary/50 transition-colors">
                         <SelectValue placeholder="Select font" />
                       </SelectTrigger>
                       <SelectContent>
@@ -478,12 +483,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   </div>
 
                   <div>
-                    <Label htmlFor="textColor">Text Color</Label>
+                    <Label htmlFor="textColor" className="font-medium mb-2 block">Text Color</Label>
                     <Select
                       value={labelData.textColor || '#ffffff'}
                       onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
                     >
-                      <SelectTrigger className="mt-1">
+                      <SelectTrigger className="hover:border-primary/50 transition-colors">
                         <SelectValue placeholder="Select color" />
                       </SelectTrigger>
                       <SelectContent>
@@ -491,7 +496,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                           <SelectItem key={color.value} value={color.value}>
                             <div className="flex items-center gap-2">
                               <div 
-                                className="w-4 h-4 rounded border border-border" 
+                                className="w-4 h-4 rounded-full border-2 border-border shadow-sm" 
                                 style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
                               />
                               {color.label}
@@ -502,21 +507,62 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                     </Select>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
-
-            <Button
-              variant="golden"
-              onClick={downloadPreview}
-              className="w-full"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Download Preview (Watermarked)
-            </Button>
+            {/* Background Image Section */}
+            <Card className="bg-card border-border shadow-soft">
+              <CardHeader className="pb-4">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Image className="w-5 h-5 text-primary" />
+                  Background Image
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <p className="text-sm text-muted-foreground">
+                    Add a custom background image to make your label unique
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Button
+                      variant="cream"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="hover-scale transition-all duration-300"
+                      size="lg"
+                    >
+                      <Image className="w-4 h-4 mr-2" />
+                      Upload Image
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={generateAIImage}
+                      className="hover-scale transition-all duration-300"
+                      size="lg"
+                    >
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      AI Generate
+                    </Button>
+                  </div>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  {labelData.backgroundImage && (
+                    <div className="text-center">
+                      <Badge variant="secondary" className="text-xs">
+                        ✓ Background image applied
+                      </Badge>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* AI Barista Dialog */}
       <Dialog open={!!aiDialogOpen} onOpenChange={(open) => !open && setAiDialogOpen(null)}>
