@@ -210,9 +210,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // Skip drawing text elements since they're now overlay inputs
     // Coffee name and tasting notes are handled by overlay inputs
 
-    // JavaMania Coffee Roastery branding at bottom
+    // JavaMania Coffee Roastery branding at bottom - ensure it's always visible
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#333333';
+    
+    // Add text shadow for better visibility against any background
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.shadowBlur = 2;
+    ctx.fillStyle = '#000000'; // Use black for better contrast
     
     // Line 1: Roasted By JavaMania Coffee Roastery
     ctx.font = 'bold 14px serif';
@@ -229,6 +235,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // Line 4: 100% Arabica Coffee & Natural Flavors
     ctx.font = '10px serif';
     ctx.fillText('100% Arabica Coffee & Natural Flavors', canvas.width / 2, canvas.height - 15);
+    
+    // Reset shadow for other elements
+    ctx.shadowColor = 'transparent';
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0;
   };
 
   const drawWatermark = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
