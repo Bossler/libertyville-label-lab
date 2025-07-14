@@ -66,13 +66,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   ];
 
   const colorOptions = [
-    { value: 'hsl(var(--background))', label: 'Background' },
+    { value: '#000000', label: 'Black' },
+    { value: '#ffffff', label: 'White' },
     { value: 'hsl(var(--foreground))', label: 'Foreground' },
     { value: 'hsl(var(--primary))', label: 'Primary' },
     { value: 'hsl(var(--secondary))', label: 'Secondary' },
     { value: 'hsl(var(--accent))', label: 'Accent' },
-    { value: '#ffffff', label: 'White' },
-    { value: '#000000', label: 'Black' },
     { value: '#8B4513', label: 'Coffee Brown' },
     { value: '#D2B48C', label: 'Light Brown' },
     { value: '#654321', label: 'Dark Brown' },
@@ -86,56 +85,51 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   const calculateFontSize = () => {
     const text = labelData.coffeeName || '';
-    const maxWidth = 300; // Approximate max width in pixels
-    const maxLineLength = 18; // Conservative estimate for characters per line
-    const maxTwoLineLength = 36; // Maximum characters for two lines
+    const boxHeight = 64; // Fixed box height in pixels
+    const maxLineLength = 15; // Optimal characters per line for readability
     
     if (text.length === 0) {
       setDynamicFontSize(32);
     } else if (text.length <= maxLineLength) {
-      // Single line, full size
-      setDynamicFontSize(32);
-    } else if (text.length <= maxTwoLineLength) {
-      // Two lines, may need slight scaling
-      const scaleFactor = Math.max(0.7, 1 - ((text.length - maxLineLength) * 0.01));
-      const newSize = Math.max(16, Math.round(32 * scaleFactor));
-      setDynamicFontSize(newSize);
+      // Single line - scale up to fill box
+      const scaleFactor = Math.min(2.0, Math.max(1.0, boxHeight / 32));
+      setDynamicFontSize(Math.min(48, 32 * scaleFactor));
+    } else if (text.length <= maxLineLength * 2) {
+      // Two lines - scale to fit nicely
+      const scaleFactor = Math.min(1.5, Math.max(0.8, boxHeight / 40));
+      setDynamicFontSize(Math.max(16, Math.min(32, 32 * scaleFactor)));
     } else {
-      // Aggressive scaling for longer text
-      const excess = text.length - maxTwoLineLength;
-      const scaleFactor = Math.max(0.25, 0.7 - (excess * 0.03));
-      const newSize = Math.max(8, Math.round(32 * scaleFactor));
-      setDynamicFontSize(newSize);
+      // Longer text - scale down to minimum readable size
+      const excess = text.length - (maxLineLength * 2);
+      const scaleFactor = Math.max(0.25, 0.8 - (excess * 0.02));
+      setDynamicFontSize(Math.max(8, Math.round(32 * scaleFactor)));
     }
   };
 
   const calculateTastingNotesFontSize = () => {
     const text = labelData.tastingNotes || '';
-    const maxLineLength = 25; // Characters per line for tasting notes
-    const maxTwoLineLength = 50; // Maximum characters for two lines
-    const maxThreeLineLength = 75; // Maximum characters for three lines
+    const boxHeight = 72; // Fixed box height in pixels
+    const maxLineLength = 20; // Optimal characters per line for tasting notes
     
     if (text.length === 0) {
       setTastingNotesFontSize(16);
     } else if (text.length <= maxLineLength) {
-      // Single line, full size
-      setTastingNotesFontSize(16);
-    } else if (text.length <= maxTwoLineLength) {
-      // Two lines, may need slight scaling
-      const scaleFactor = Math.max(0.75, 1 - ((text.length - maxLineLength) * 0.008));
-      const newSize = Math.max(10, Math.round(16 * scaleFactor));
-      setTastingNotesFontSize(newSize);
-    } else if (text.length <= maxThreeLineLength) {
-      // Three lines, moderate scaling
-      const scaleFactor = Math.max(0.6, 0.75 - ((text.length - maxTwoLineLength) * 0.01));
-      const newSize = Math.max(8, Math.round(16 * scaleFactor));
-      setTastingNotesFontSize(newSize);
+      // Single line - scale up to fill box
+      const scaleFactor = Math.min(1.8, Math.max(1.0, boxHeight / 48));
+      setTastingNotesFontSize(Math.min(24, 16 * scaleFactor));
+    } else if (text.length <= maxLineLength * 2) {
+      // Two lines - scale to fit nicely
+      const scaleFactor = Math.min(1.4, Math.max(0.9, boxHeight / 32));
+      setTastingNotesFontSize(Math.max(12, Math.min(20, 16 * scaleFactor)));
+    } else if (text.length <= maxLineLength * 3) {
+      // Three lines - standard size
+      const scaleFactor = Math.min(1.2, Math.max(0.8, boxHeight / 48));
+      setTastingNotesFontSize(Math.max(10, Math.min(16, 16 * scaleFactor)));
     } else {
-      // Aggressive scaling for longer text
-      const excess = text.length - maxThreeLineLength;
-      const scaleFactor = Math.max(0.5, 0.6 - (excess * 0.02));
-      const newSize = Math.max(8, Math.round(16 * scaleFactor));
-      setTastingNotesFontSize(newSize);
+      // Very long text - scale down but stay readable
+      const excess = text.length - (maxLineLength * 3);
+      const scaleFactor = Math.max(0.5, 0.8 - (excess * 0.015));
+      setTastingNotesFontSize(Math.max(8, Math.round(16 * scaleFactor)));
     }
   };
 
@@ -163,10 +157,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       };
       img.src = labelData.backgroundImage;
     } else {
-      // Default gradient background
+      // Default light gray gradient background
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#8B4513');
-      gradient.addColorStop(1, '#D2B48C');
+      gradient.addColorStop(0, '#f5f5f5');
+      gradient.addColorStop(1, '#e5e5e5');
       ctx.fillStyle = gradient;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       drawTextElements(ctx, canvas);
@@ -421,11 +415,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                               style={{
                                 fontSize: `${dynamicFontSize}px`,
                                 fontFamily: labelData.fontFamily || 'serif',
-                                color: labelData.textColor || '#ffffff',
-                                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                                color: labelData.textColor || '#000000',
+                                textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
                                 lineHeight: '1.1',
-                                height: `${Math.max(dynamicFontSize * 2.2, 64)}px`,
-                                maxHeight: `${Math.max(dynamicFontSize * 2.2, 64)}px`
+                                height: `64px`,
+                                maxHeight: `64px`
                               }}
                               maxLength={120}
                               rows={2}
@@ -471,11 +465,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                               style={{
                                 fontSize: `${tastingNotesFontSize}px`,
                                 fontFamily: labelData.fontFamily || 'serif',
-                                color: labelData.textColor || '#ffffff',
-                                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                                color: labelData.textColor || '#000000',
+                                textShadow: '1px 1px 2px rgba(255,255,255,0.8)',
                                 lineHeight: '1.2',
-                                height: `${Math.max(tastingNotesFontSize * 3.6, 72)}px`,
-                                maxHeight: `${Math.max(tastingNotesFontSize * 3.6, 72)}px`
+                                height: `72px`,
+                                maxHeight: `72px`
                               }}
                               maxLength={200}
                               rows={3}
@@ -566,7 +560,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   <div>
                     <Label htmlFor="textColor" className="font-medium mb-2 block">Text Color</Label>
                     <Select
-                      value={labelData.textColor || '#ffffff'}
+                      value={labelData.textColor || '#000000'}
                       onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
                     >
                       <SelectTrigger className="hover:border-primary/50 transition-colors">
