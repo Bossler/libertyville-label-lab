@@ -415,12 +415,28 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-warmth p-4">
-      <div className="max-w-6xl mx-auto">
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Left Side - Large Preview Panel */}
-          <div className="lg:col-span-2 order-2 lg:order-1">
-            <Card className="bg-gradient-cream border-border shadow-elegant">
-              <CardContent className="p-8">
+      <div className="max-w-6xl mx-auto space-y-8">
+        {/* Header */}
+        <Card className="bg-gradient-soft border-border shadow-soft">
+          <CardHeader className="text-center">
+            <CardTitle className="text-xl text-foreground flex items-center justify-center gap-2">
+              <Palette className="w-6 h-6 text-primary" />
+              Coffee Label Designer
+            </CardTitle>
+            {productName && (
+              <Badge variant="secondary" className="mt-2">
+                Designing for: {productName}
+              </Badge>
+            )}
+          </CardHeader>
+        </Card>
+
+        {/* Top Section - Preview with Background Options */}
+        <Card className="bg-gradient-cream border-border shadow-elegant">
+          <CardContent className="p-8">
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Preview Section */}
+              <div className="lg:col-span-2">
                 <div className="text-center space-y-6">
                   <div className="space-y-2">
                     <h2 className="text-2xl font-bold text-foreground">Label Preview</h2>
@@ -467,7 +483,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                                 e.preventDefault();
                                 const paste = e.clipboardData.getData('text').replace(/\r?\n|\r/g, ' ');
                                 const newValue = labelData.coffeeName + paste;
-                                onLabelChange({ ...labelData, coffeeName: newValue.substring(0, 120) });
+                                if (newValue.length <= 120) {
+                                  onLabelChange({ ...labelData, coffeeName: newValue });
+                                }
                               }}
                             />
                             <Button
@@ -559,121 +577,142 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                     Download Preview
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              </div>
 
-          {/* Right Side - Controls Panel */}
-          <div className="order-1 lg:order-2 space-y-6">
-            {/* Style & Appearance Section */}
-            <Card className="bg-card border-border shadow-soft">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Palette className="w-5 h-5 text-primary" />
-                  Style & Appearance
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <Label htmlFor="fontFamily" className="font-medium mb-2 block">Font Style</Label>
-                    <Select
-                      value={labelData.fontFamily || 'serif'}
-                      onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
-                    >
-                      <SelectTrigger className="hover:border-primary/50 transition-colors">
-                        <SelectValue placeholder="Select font" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {fontOptions.map((font) => (
-                          <SelectItem key={font.value} value={font.value}>
-                            <span style={{ fontFamily: font.value }}>{font.label}</span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+              {/* Background Options Section */}
+              <div className="lg:col-span-1">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-semibold text-foreground">Background Options</h3>
+                    <p className="text-sm text-muted-foreground">Customize your label background</p>
                   </div>
-
-                  <div>
-                    <Label htmlFor="textColor" className="font-medium mb-2 block">Text Color</Label>
-                    <Select
-                      value={labelData.textColor || '#000000'}
-                      onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
-                    >
-                      <SelectTrigger className="hover:border-primary/50 transition-colors">
-                        <SelectValue placeholder="Select color" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {colorOptions.map((color) => (
-                          <SelectItem key={color.value} value={color.value}>
-                            <div className="flex items-center gap-2">
-                              <div 
-                                className="w-4 h-4 rounded-full border-2 border-border shadow-sm" 
-                                style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
-                              />
-                              {color.label}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Background Image Section */}
-            <Card className="bg-card border-border shadow-soft">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Image className="w-5 h-5 text-primary" />
-                  Background Image
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <p className="text-sm text-muted-foreground">
-                    Add a custom background image to make your label unique
-                  </p>
-                  <div className="grid grid-cols-1 gap-3">
-                    <Button
-                      variant="cream"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="hover-scale transition-all duration-300"
-                      size="lg"
-                    >
-                      <Image className="w-4 h-4 mr-2" />
-                      Upload Image
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={generateAIImage}
-                      className="hover-scale transition-all duration-300"
-                      size="lg"
-                    >
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      AI Generate
-                    </Button>
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  {labelData.backgroundImage && (
-                    <div className="text-center">
-                      <Badge variant="secondary" className="text-xs">
-                        ✓ Background image applied
-                      </Badge>
+                  
+                  <div className="space-y-4">
+                    {/* Upload Background */}
+                    <div>
+                      <Label htmlFor="background-upload" className="text-sm font-medium">Upload Image</Label>
+                      <div className="mt-2">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          id="background-upload"
+                          accept="image/*"
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                        <Button
+                          onClick={() => fileInputRef.current?.click()}
+                          variant="cream"
+                          className="w-full hover-scale"
+                          size="lg"
+                        >
+                          <Image className="w-4 h-4 mr-2" />
+                          Upload Background
+                        </Button>
+                      </div>
                     </div>
-                  )}
+
+                    {/* AI Image Generation */}
+                    <div>
+                      <Label className="text-sm font-medium">AI Generated</Label>
+                      <div className="mt-2">
+                        <Button
+                          onClick={generateAIImage}
+                          variant="outline"
+                          disabled={isGeneratingImage}
+                          className="w-full hover-scale"
+                          size="lg"
+                        >
+                          {isGeneratingImage ? (
+                            <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-2" />
+                          ) : (
+                            <Sparkles className="w-4 h-4 mr-2" />
+                          )}
+                          Generate AI Background
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Remove Background */}
+                    {labelData.backgroundImage && (
+                      <div>
+                        <Button
+                          onClick={() => onLabelChange({ ...labelData, backgroundImage: undefined })}
+                          variant="outline"
+                          className="w-full"
+                        >
+                          Remove Background
+                        </Button>
+                        <div className="text-center mt-2">
+                          <Badge variant="secondary" className="text-xs">
+                            ✓ Background image applied
+                          </Badge>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Bottom Section - Style Controls */}
+        <Card className="bg-card border-border shadow-soft">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Palette className="w-5 h-5 text-primary" />
+              Style & Appearance
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fontFamily" className="font-medium mb-2 block">Font Style</Label>
+                <Select
+                  value={labelData.fontFamily || 'serif'}
+                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
+                >
+                  <SelectTrigger className="hover:border-primary/50 transition-colors">
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fontOptions.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <span style={{ fontFamily: font.value }}>{font.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="textColor" className="font-medium mb-2 block">Text Color</Label>
+                <Select
+                  value={labelData.textColor || '#000000'}
+                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
+                >
+                  <SelectTrigger className="hover:border-primary/50 transition-colors">
+                    <SelectValue placeholder="Select color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colorOptions.map((color) => (
+                      <SelectItem key={color.value} value={color.value}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded-full border-2 border-border shadow-sm" 
+                            style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
+                          />
+                          {color.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* AI Barista Dialog */}
@@ -767,18 +806,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 placeholder="e.g., watercolor, vintage, minimalist, photographic, artistic"
               />
             </div>
-            
-            <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded space-y-2">
-              <div>
-                <strong>✅ Good prompts:</strong> Coffee beans, cups, roasted coffee, brewing equipment, coffee shop interiors, steam, warm colors, wooden textures
-              </div>
-              <div>
-                <strong>❌ Avoid:</strong> People, medical imagery, violent content, copyrighted characters
-              </div>
-              <div>
-                <strong>Note:</strong> The AI will automatically ensure no text or letters appear in the generated image.
-              </div>
-            </div>
           </div>
 
           <DialogFooter>
@@ -790,33 +817,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               disabled={!imagePrompt.trim() || isGeneratingImage}
             >
               {isGeneratingImage ? (
-                <Sparkles className="w-4 h-4 mr-2 animate-pulse" />
+                <div className="animate-spin w-4 h-4 border-2 border-primary border-t-transparent rounded-full mr-2" />
               ) : (
                 <Sparkles className="w-4 h-4 mr-2" />
               )}
-              {isGeneratingImage ? 'Generating...' : 'Generate Image'}
+              Generate Image
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* AI Loading Overlay */}
-      {isAnyAILoading && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-card border border-border rounded-lg p-6 shadow-lg max-w-sm mx-4">
-            <div className="flex flex-col items-center space-y-4">
-              <div className="relative">
-                <div className="w-12 h-12 border-4 border-primary/20 rounded-full"></div>
-                <div className="absolute top-0 left-0 w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-              </div>
-              <div className="text-center">
-                <h3 className="font-semibold text-foreground mb-1">AI Barista at Work</h3>
-                <p className="text-sm text-muted-foreground">Please wait, we're brewing something up!</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
