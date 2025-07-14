@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Palette, Download, Image, Sparkles, Type, Bot, Copy } from 'lucide-react';
+import { Palette, Download, Image, Sparkles, Type, Bot } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LabelData {
   coffeeName: string;
@@ -46,7 +47,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({});
   const [aiDialogOpen, setAiDialogOpen] = useState<string | null>(null);
   const [userRequest, setUserRequest] = useState('');
-  const [openaiApiKey, setOpenaiApiKey] = useState('');
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -206,56 +206,35 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   };
 
   const generateAISuggestion = async (type: 'name' | 'notes' | 'preview', request: string) => {
-    if (!openaiApiKey) {
-      toast.error('OpenAI API key is required. Please enter it in the dialog.');
-      return;
-    }
-
     setIsGeneratingAI(prev => ({ ...prev, [type]: true }));
     setAiDialogOpen(null);
 
     try {
       let currentContent = '';
-      let systemPrompt = '';
       
       if (type === 'name') {
         currentContent = labelData.coffeeName || '';
-        const productContext = productInfo ? `for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight})` : 'for this coffee product';
-        systemPrompt = `You are an expert coffee branding specialist. Help improve coffee names ${productContext}. Current name: "${currentContent}". User request: "${request}". Provide only the improved name, nothing else.`;
       } else if (type === 'notes') {
         currentContent = labelData.tastingNotes || '';
-        const productContext = productInfo ? `for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight})` : 'for this coffee product';
-        systemPrompt = `You are an expert coffee taster and copywriter. Help improve tasting notes ${productContext}. Current notes: "${currentContent}". User request: "${request}". Provide only the improved tasting notes, nothing else.`;
       } else if (type === 'preview') {
         currentContent = `Font: ${labelData.fontFamily || 'serif'}, Color: ${labelData.textColor || '#ffffff'}`;
-        systemPrompt = `You are a label design expert. Current style: ${currentContent}. User request: "${request}". Respond with ONLY a JSON object like {"fontFamily": "serif", "textColor": "#ffffff"} with improved values.`;
       }
 
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${openaiApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt
-            }
-          ],
-          max_tokens: 200,
-          temperature: 0.7,
-        }),
+      const { data, error } = await supabase.functions.invoke('ai-barista', {
+        body: {
+          type,
+          request,
+          currentContent,
+          productInfo,
+          labelData
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+      if (error) {
+        throw new Error(error.message || 'Failed to generate AI suggestion');
       }
 
-      const data = await response.json();
-      const suggestion = data.choices[0].message.content.trim();
+      const suggestion = data.suggestion;
 
       if (type === 'name') {
         onLabelChange({ ...labelData, coffeeName: suggestion });
@@ -278,8 +257,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       }
 
     } catch (error) {
-      console.error('OpenAI API error:', error);
-      toast.error('Failed to generate AI suggestion. Please check your API key.');
+      console.error('AI Barista error:', error);
+      toast.error('Failed to generate AI suggestion. Please try again.');
     }
 
     setIsGeneratingAI(prev => ({ ...prev, [type]: false }));
@@ -519,23 +498,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           </DialogHeader>
           
           <div className="space-y-4">
-            {!openaiApiKey && (
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">OpenAI API Key</Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  value={openaiApiKey}
-                  onChange={(e) => setOpenaiApiKey(e.target.value)}
-                  placeholder="Enter your OpenAI API key"
-                  className="font-mono text-sm"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Your API key is stored locally and not saved. For production use, consider connecting to Supabase for secure secret management.
-                </p>
-              </div>
-            )}
-            
             <div className="space-y-2">
               <Label htmlFor="userRequest">Your Request</Label>
               <Textarea
@@ -571,7 +533,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             </Button>
             <Button 
               onClick={handleAISubmit}
-              disabled={!userRequest.trim() || !openaiApiKey}
+              disabled={!userRequest.trim()}
             >
               <Sparkles className="w-4 h-4 mr-2" />
               Improve with AI
