@@ -268,7 +268,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     setUserRequest('');
   };
 
-  const handleAIButtonClick = (type: 'name' | 'notes' | 'preview') => {
+  const handleAIButtonClick = (type: 'name' | 'notes') => {
     setAiDialogOpen(type);
     setUserRequest('');
   };
@@ -280,7 +280,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }
     
     if (aiDialogOpen) {
-      generateAISuggestion(aiDialogOpen as 'name' | 'notes' | 'preview', userRequest);
+      generateAISuggestion(aiDialogOpen as 'name' | 'notes', userRequest);
     }
   };
 
@@ -491,19 +491,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 <Badge variant="secondary" className="text-xs">
                   4" × 6" • 96 DPI Preview
                 </Badge>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleAIButtonClick('preview')}
-                  disabled={isGeneratingAI.preview}
-                >
-                  {isGeneratingAI.preview ? (
-                    <Sparkles className="w-3 h-3 animate-pulse" />
-                  ) : (
-                    <Bot className="w-3 h-3" />
-                  )}
-                  AI Barista
-                </Button>
               </div>
             </div>
             
@@ -571,11 +558,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             
             {aiDialogOpen && (
               <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
-                <strong>Current {aiDialogOpen === 'name' ? 'name' : aiDialogOpen === 'notes' ? 'notes' : 'style'}:</strong>
+                <strong>Current {aiDialogOpen === 'name' ? 'name' : 'notes'}:</strong>
                 <p className="mt-1">
                   {aiDialogOpen === 'name' && (labelData.coffeeName || 'Empty')}
                   {aiDialogOpen === 'notes' && (labelData.tastingNotes || 'Empty')}
-                  {aiDialogOpen === 'preview' && `Font: ${labelData.fontFamily || 'serif'}, Color: ${labelData.textColor || '#ffffff'}`}
                 </p>
               </div>
             )}
