@@ -83,8 +83,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   const calculateFontSize = () => {
     const text = labelData.coffeeName || '';
-    const maxLineLength = 20; // Approximate characters per line
-    const maxTwoLineLength = 40; // Maximum characters for two lines
+    const maxWidth = 300; // Approximate max width in pixels
+    const maxLineLength = 18; // Conservative estimate for characters per line
+    const maxTwoLineLength = 36; // Maximum characters for two lines
     
     if (text.length === 0) {
       setDynamicFontSize(32);
@@ -92,12 +93,14 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       // Single line, full size
       setDynamicFontSize(32);
     } else if (text.length <= maxTwoLineLength) {
-      // Two lines, full size
-      setDynamicFontSize(32);
+      // Two lines, may need slight scaling
+      const scaleFactor = Math.max(0.7, 1 - ((text.length - maxLineLength) * 0.01));
+      const newSize = Math.max(16, Math.round(32 * scaleFactor));
+      setDynamicFontSize(newSize);
     } else {
-      // Scale down based on length beyond two lines
+      // Aggressive scaling for longer text
       const excess = text.length - maxTwoLineLength;
-      const scaleFactor = Math.max(0.25, 1 - (excess * 0.02)); // Minimum 25% (8px from 32px)
+      const scaleFactor = Math.max(0.25, 0.7 - (excess * 0.03));
       const newSize = Math.max(8, Math.round(32 * scaleFactor));
       setDynamicFontSize(newSize);
     }
@@ -263,6 +266,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
       if (type === 'name') {
         onLabelChange({ ...labelData, coffeeName: suggestion });
+        // Trigger font size recalculation after AI suggestion
+        setTimeout(() => calculateFontSize(), 100);
         toast.success('AI Barista improved your coffee name!');
       } else if (type === 'notes') {
         onLabelChange({ ...labelData, tastingNotes: suggestion });
@@ -394,24 +399,30 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                               value={labelData.coffeeName}
                               onChange={(e) => onLabelChange({ ...labelData, coffeeName: e.target.value })}
                               placeholder="Edit Coffee Name"
-                              className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0"
+                              className="bg-transparent border-transparent text-center font-bold shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
                               style={{
                                 fontSize: `${dynamicFontSize}px`,
                                 fontFamily: labelData.fontFamily || 'serif',
                                 color: labelData.textColor || '#ffffff',
                                 textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
                                 lineHeight: '1.1',
-                                height: dynamicFontSize > 24 ? `${dynamicFontSize * 2.2}px` : `${dynamicFontSize * 2.4}px`
+                                height: `${Math.max(dynamicFontSize * 2.2, 64)}px`,
+                                maxHeight: `${Math.max(dynamicFontSize * 2.2, 64)}px`
                               }}
                               maxLength={120}
                               rows={2}
-                              onInput={(e) => {
-                                // Auto-resize height based on content
-                                const target = e.target as HTMLTextAreaElement;
-                                target.style.height = 'auto';
-                                const scrollHeight = target.scrollHeight;
-                                const maxHeight = dynamicFontSize * 2.4;
-                                target.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
+                              onKeyDown={(e) => {
+                                // Prevent line breaks that would create a third line
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                }
+                              }}
+                              onPaste={(e) => {
+                                // Handle paste events to prevent line breaks
+                                e.preventDefault();
+                                const paste = e.clipboardData.getData('text').replace(/\r?\n|\r/g, ' ');
+                                const newValue = labelData.coffeeName + paste;
+                                onLabelChange({ ...labelData, coffeeName: newValue.substring(0, 120) });
                               }}
                             />
                             <Button
