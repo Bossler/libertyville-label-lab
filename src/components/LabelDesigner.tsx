@@ -109,28 +109,47 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const calculateTastingNotesFontSize = () => {
     const text = labelData.tastingNotes || '';
     const boxHeight = 72; // Fixed box height in pixels
-    const maxLineLength = 20; // Optimal characters per line for tasting notes
+    const minFontSize = 8;
+    const maxFontSize = 72;
+    const lineHeight = 1.2;
+    const maxLines = 3;
     
     if (text.length === 0) {
-      setTastingNotesFontSize(16);
-    } else if (text.length <= maxLineLength) {
-      // Single line - scale up to fill box
-      const scaleFactor = Math.min(1.8, Math.max(1.0, boxHeight / 48));
-      setTastingNotesFontSize(Math.min(24, 16 * scaleFactor));
-    } else if (text.length <= maxLineLength * 2) {
-      // Two lines - scale to fit nicely
-      const scaleFactor = Math.min(1.4, Math.max(0.9, boxHeight / 32));
-      setTastingNotesFontSize(Math.max(12, Math.min(20, 16 * scaleFactor)));
-    } else if (text.length <= maxLineLength * 3) {
-      // Three lines - standard size
-      const scaleFactor = Math.min(1.2, Math.max(0.8, boxHeight / 48));
-      setTastingNotesFontSize(Math.max(10, Math.min(16, 16 * scaleFactor)));
-    } else {
-      // Very long text - scale down but stay readable
-      const excess = text.length - (maxLineLength * 3);
-      const scaleFactor = Math.max(0.5, 0.8 - (excess * 0.015));
-      setTastingNotesFontSize(Math.max(8, Math.round(16 * scaleFactor)));
+      setTastingNotesFontSize(maxFontSize);
+      return;
     }
+
+    // Calculate optimal font size to fill the box
+    const estimatedCharsPerLine = Math.max(1, Math.floor(text.length / maxLines));
+    const baseFontSize = Math.min(maxFontSize, boxHeight / (maxLines * lineHeight));
+    
+    // Adjust based on text density
+    let calculatedSize;
+    if (text.length <= 15) {
+      // Very short text - use large font
+      calculatedSize = Math.min(maxFontSize, baseFontSize * 2.5);
+    } else if (text.length <= 30) {
+      // Short text - scale up
+      calculatedSize = Math.min(maxFontSize, baseFontSize * 2);
+    } else if (text.length <= 60) {
+      // Medium text - optimal size
+      calculatedSize = Math.min(maxFontSize, baseFontSize * 1.5);
+    } else if (text.length <= 120) {
+      // Longer text - scale down gradually
+      const scaleFactor = 1.2 - ((text.length - 60) / 120) * 0.4;
+      calculatedSize = Math.max(minFontSize, baseFontSize * scaleFactor);
+    } else {
+      // Very long text - minimum size with warning
+      calculatedSize = minFontSize;
+      
+      // Check if text exceeds capacity at minimum font size
+      const maxCharsAtMinSize = Math.floor((boxHeight / (minFontSize * lineHeight)) * 25); // ~25 chars per line at min size
+      if (text.length > maxCharsAtMinSize) {
+        toast.error(`Text too long! Maximum ${maxCharsAtMinSize} characters at minimum font size.`);
+      }
+    }
+    
+    setTastingNotesFontSize(Math.round(Math.max(minFontSize, Math.min(maxFontSize, calculatedSize))));
   };
 
   const drawLabel = () => {
@@ -471,7 +490,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                                 height: `72px`,
                                 maxHeight: `72px`
                               }}
-                              maxLength={200}
+                              maxLength={300}
                               rows={3}
                               onKeyDown={(e) => {
                                 // Allow natural line breaks but prevent excessive lines
@@ -487,7 +506,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                                 const lines = paste.split(/\r?\n|\r/);
                                 const limitedText = lines.slice(0, 3).join('\n');
                                 const newValue = labelData.tastingNotes + limitedText;
-                                onLabelChange({ ...labelData, tastingNotes: newValue.substring(0, 200) });
+                                onLabelChange({ ...labelData, tastingNotes: newValue.substring(0, 300) });
                               }}
                             />
                             <Button
