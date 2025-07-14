@@ -5,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
-import { Palette, Download, Image, Sparkles, Eye } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Palette, Download, Image, Sparkles, Type } from 'lucide-react';
 
 interface LabelData {
   coffeeName: string;
   tastingNotes: string;
   backgroundImage?: string;
+  fontFamily?: string;
+  textColor?: string;
 }
 
 interface LabelDesignerProps {
@@ -27,6 +30,29 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [previewMode, setPreviewMode] = useState(false);
+
+  const fontOptions = [
+    { value: 'serif', label: 'Serif (Classic)' },
+    { value: 'sans-serif', label: 'Sans-Serif (Modern)' },
+    { value: 'cursive', label: 'Cursive (Elegant)' },
+    { value: 'Georgia', label: 'Georgia' },
+    { value: 'Times New Roman', label: 'Times New Roman' },
+    { value: 'Arial', label: 'Arial' },
+    { value: 'Helvetica', label: 'Helvetica' },
+  ];
+
+  const colorOptions = [
+    { value: 'hsl(var(--background))', label: 'Background' },
+    { value: 'hsl(var(--foreground))', label: 'Foreground' },
+    { value: 'hsl(var(--primary))', label: 'Primary' },
+    { value: 'hsl(var(--secondary))', label: 'Secondary' },
+    { value: 'hsl(var(--accent))', label: 'Accent' },
+    { value: '#ffffff', label: 'White' },
+    { value: '#000000', label: 'Black' },
+    { value: '#8B4513', label: 'Coffee Brown' },
+    { value: '#D2B48C', label: 'Light Brown' },
+    { value: '#654321', label: 'Dark Brown' },
+  ];
 
   useEffect(() => {
     drawLabel();
@@ -70,19 +96,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const drawTextElements = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
     // Set text styles
     ctx.textAlign = 'center';
-    ctx.fillStyle = '#ffffff';
+    const textColor = labelData.textColor || '#ffffff';
+    ctx.fillStyle = textColor;
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
 
+    const fontFamily = labelData.fontFamily || 'serif';
+
     // Coffee name (title)
-    ctx.font = 'bold 32px serif';
+    ctx.font = `bold 32px ${fontFamily}`;
     const coffeeName = labelData.coffeeName || productName || 'Custom Coffee';
     ctx.fillText(coffeeName, canvas.width / 2, 80);
     ctx.strokeText(coffeeName, canvas.width / 2, 80);
 
     // Tasting notes
     if (labelData.tastingNotes) {
-      ctx.font = '16px serif';
+      ctx.font = `16px ${fontFamily}`;
       const lines = wrapText(ctx, labelData.tastingNotes, canvas.width - 40);
       lines.forEach((line, index) => {
         ctx.fillText(line, canvas.width / 2, 140 + (index * 24));
@@ -170,7 +199,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       <Card className="bg-gradient-cream border-border shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-primary" />
+            <Type className="w-5 h-5 text-primary" />
             Label Design
           </CardTitle>
         </CardHeader>
@@ -197,6 +226,53 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 placeholder="Describe the flavor profile, aroma, and characteristics..."
                 className="mt-1 min-h-[100px]"
               />
+            </div>
+
+            {/* Font and Color Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="fontFamily">Font Style</Label>
+                <Select
+                  value={labelData.fontFamily || 'serif'}
+                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select font" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fontOptions.map((font) => (
+                      <SelectItem key={font.value} value={font.value}>
+                        <span style={{ fontFamily: font.value }}>{font.label}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="textColor">Text Color</Label>
+                <Select
+                  value={labelData.textColor || '#ffffff'}
+                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="Select color" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colorOptions.map((color) => (
+                      <SelectItem key={color.value} value={color.value}>
+                        <div className="flex items-center gap-2">
+                          <div 
+                            className="w-4 h-4 rounded border border-border" 
+                            style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
+                          />
+                          {color.label}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
