@@ -213,30 +213,35 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // Coffee name and tasting notes are handled by overlay inputs
 
     // Product Information Section - 1" above branding text (96 pixels at 96 DPI)
-    if (productInfo) {
-      ctx.textAlign = 'center';
-      ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 1;
-      ctx.shadowBlur = 2;
-      ctx.fillStyle = labelData.productInfoTextColor || '#000000';
-      
-      const productInfoY = canvas.height - 156; // 1" above branding text
-      const today = new Date();
-      const roastDate = today.toLocaleDateString();
-      
-      // Line 1: Weight and Grind Type
-      ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
-      ctx.fillText(`${productInfo.weight} • ${productInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'}`, canvas.width / 2, productInfoY);
-      
-      // Line 2: Regular/Decaf
-      ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
-      ctx.fillText(`${productInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, canvas.width / 2, productInfoY + 15);
-      
-      // Line 3: Roast Date
-      ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
-      ctx.fillText(`Roast Date: ${roastDate}`, canvas.width / 2, productInfoY + 30);
-    }
+    // Use actual product info or generate placeholder data
+    const displayProductInfo = productInfo || {
+      weight: '12 oz',
+      grind: 'whole-bean' as const,
+      type: 'regular' as const
+    };
+
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
+    ctx.shadowOffsetX = 1;
+    ctx.shadowOffsetY = 1;
+    ctx.shadowBlur = 2;
+    ctx.fillStyle = labelData.productInfoTextColor || '#000000';
+    
+    const productInfoY = canvas.height - 156; // 1" above branding text
+    const today = new Date();
+    const roastDate = today.toLocaleDateString();
+    
+    // Line 1: Weight and Grind Type
+    ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
+    ctx.fillText(`${displayProductInfo.weight} • ${displayProductInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'}`, canvas.width / 2, productInfoY);
+    
+    // Line 2: Regular/Decaf
+    ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
+    ctx.fillText(`${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, canvas.width / 2, productInfoY + 15);
+    
+    // Line 3: Roast Date
+    ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
+    ctx.fillText(`Roast Date: ${roastDate}`, canvas.width / 2, productInfoY + 30);
 
     // JavaMania Coffee Roastery branding at bottom - ensure it's always visible
     ctx.textAlign = 'center';
@@ -851,8 +856,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   </div>
                   
                   {/* Product Information Styling Controls */}
-                  {productInfo && (
-                    <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/50">
+                  <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/50">
                       <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <Badge className="w-4 h-4" />
                         Product Information Style
@@ -906,7 +910,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                         Shows: Weight • Grind Type • Regular/Decaf • Roast Date (auto-generated)
                       </p>
                     </div>
-                  )}
                 </div>
               </div>
 
