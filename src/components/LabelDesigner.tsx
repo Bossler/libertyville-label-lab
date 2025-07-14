@@ -206,11 +206,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   };
 
   const generateAISuggestion = async (type: 'name' | 'notes' | 'preview', request: string) => {
-    if (!productInfo) {
-      toast.error('Product information is required to generate AI suggestions');
-      return;
-    }
-
     if (!openaiApiKey) {
       toast.error('OpenAI API key is required. Please enter it in the dialog.');
       return;
@@ -225,10 +220,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       
       if (type === 'name') {
         currentContent = labelData.coffeeName || '';
-        systemPrompt = `You are an expert coffee branding specialist. Help improve coffee names for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight}). Current name: "${currentContent}". User request: "${request}". Provide only the improved name, nothing else.`;
+        const productContext = productInfo ? `for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight})` : 'for this coffee product';
+        systemPrompt = `You are an expert coffee branding specialist. Help improve coffee names ${productContext}. Current name: "${currentContent}". User request: "${request}". Provide only the improved name, nothing else.`;
       } else if (type === 'notes') {
         currentContent = labelData.tastingNotes || '';
-        systemPrompt = `You are an expert coffee taster and copywriter. Help improve tasting notes for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight}). Current notes: "${currentContent}". User request: "${request}". Provide only the improved tasting notes, nothing else.`;
+        const productContext = productInfo ? `for ${productInfo.name} (${productInfo.type}, ${productInfo.grind}, ${productInfo.weight})` : 'for this coffee product';
+        systemPrompt = `You are an expert coffee taster and copywriter. Help improve tasting notes ${productContext}. Current notes: "${currentContent}". User request: "${request}". Provide only the improved tasting notes, nothing else.`;
       } else if (type === 'preview') {
         currentContent = `Font: ${labelData.fontFamily || 'serif'}, Color: ${labelData.textColor || '#ffffff'}`;
         systemPrompt = `You are a label design expert. Current style: ${currentContent}. User request: "${request}". Respond with ONLY a JSON object like {"fontFamily": "serif", "textColor": "#ffffff"} with improved values.`;
@@ -330,7 +327,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleAIButtonClick('name')}
-                  disabled={!productInfo || isGeneratingAI.name}
+                  disabled={isGeneratingAI.name}
                 >
                   {isGeneratingAI.name ? (
                     <Sparkles className="w-3 h-3 animate-pulse" />
@@ -356,7 +353,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleAIButtonClick('notes')}
-                  disabled={!productInfo || isGeneratingAI.notes}
+                  disabled={isGeneratingAI.notes}
                 >
                   {isGeneratingAI.notes ? (
                     <Sparkles className="w-3 h-3 animate-pulse" />
@@ -465,7 +462,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   variant="outline"
                   size="sm"
                   onClick={() => handleAIButtonClick('preview')}
-                  disabled={!productInfo || isGeneratingAI.preview}
+                  disabled={isGeneratingAI.preview}
                 >
                   {isGeneratingAI.preview ? (
                     <Sparkles className="w-3 h-3 animate-pulse" />
