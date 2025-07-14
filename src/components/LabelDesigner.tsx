@@ -784,62 +784,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           </CardContent>
         </Card>
 
-        {/* Bottom Section - Style Controls */}
-        <Card className="bg-card border-border shadow-soft">
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Palette className="w-5 h-5 text-primary" />
-              Style & Appearance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="fontFamily" className="font-medium mb-2 block">Font Style</Label>
-                <Select
-                  value={labelData.fontFamily || 'serif'}
-                  onValueChange={(value) => onLabelChange({ ...labelData, fontFamily: value })}
-                >
-                  <SelectTrigger className="hover:border-primary/50 transition-colors">
-                    <SelectValue placeholder="Select font" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {fontOptions.map((font) => (
-                      <SelectItem key={font.value} value={font.value}>
-                        <span style={{ fontFamily: font.value }}>{font.label}</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div>
-                <Label htmlFor="textColor" className="font-medium mb-2 block">Text Color</Label>
-                <Select
-                  value={labelData.textColor || '#000000'}
-                  onValueChange={(value) => onLabelChange({ ...labelData, textColor: value })}
-                >
-                  <SelectTrigger className="hover:border-primary/50 transition-colors">
-                    <SelectValue placeholder="Select color" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {colorOptions.map((color) => (
-                      <SelectItem key={color.value} value={color.value}>
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-4 h-4 rounded-full border-2 border-border shadow-sm" 
-                            style={{ backgroundColor: color.value.startsWith('hsl') ? `var(--${color.value.match(/--(\w+)/)?.[1]})` : color.value }}
-                          />
-                          {color.label}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       {/* AI Barista Dialog */}
