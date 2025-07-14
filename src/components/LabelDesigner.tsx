@@ -44,6 +44,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const tastingNotesRef = useRef<HTMLTextAreaElement>(null);
   const [previewMode, setPreviewMode] = useState(false);
   const [isGeneratingAI, setIsGeneratingAI] = useState<{[key: string]: boolean}>({});
   const [aiDialogOpen, setAiDialogOpen] = useState<string | null>(null);
@@ -52,6 +53,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [imageStyle, setImageStyle] = useState('');
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [dynamicFontSize, setDynamicFontSize] = useState(32);
+  const [tastingNotesFontSize, setTastingNotesFontSize] = useState(16);
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -79,6 +81,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   useEffect(() => {
     drawLabel();
     calculateFontSize();
+    calculateTastingNotesFontSize();
   }, [labelData, previewMode]);
 
   const calculateFontSize = () => {
@@ -103,6 +106,36 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       const scaleFactor = Math.max(0.25, 0.7 - (excess * 0.03));
       const newSize = Math.max(8, Math.round(32 * scaleFactor));
       setDynamicFontSize(newSize);
+    }
+  };
+
+  const calculateTastingNotesFontSize = () => {
+    const text = labelData.tastingNotes || '';
+    const maxLineLength = 25; // Characters per line for tasting notes
+    const maxTwoLineLength = 50; // Maximum characters for two lines
+    const maxThreeLineLength = 75; // Maximum characters for three lines
+    
+    if (text.length === 0) {
+      setTastingNotesFontSize(16);
+    } else if (text.length <= maxLineLength) {
+      // Single line, full size
+      setTastingNotesFontSize(16);
+    } else if (text.length <= maxTwoLineLength) {
+      // Two lines, may need slight scaling
+      const scaleFactor = Math.max(0.75, 1 - ((text.length - maxLineLength) * 0.008));
+      const newSize = Math.max(10, Math.round(16 * scaleFactor));
+      setTastingNotesFontSize(newSize);
+    } else if (text.length <= maxThreeLineLength) {
+      // Three lines, moderate scaling
+      const scaleFactor = Math.max(0.6, 0.75 - ((text.length - maxTwoLineLength) * 0.01));
+      const newSize = Math.max(8, Math.round(16 * scaleFactor));
+      setTastingNotesFontSize(newSize);
+    } else {
+      // Aggressive scaling for longer text
+      const excess = text.length - maxThreeLineLength;
+      const scaleFactor = Math.max(0.5, 0.6 - (excess * 0.02));
+      const newSize = Math.max(8, Math.round(16 * scaleFactor));
+      setTastingNotesFontSize(newSize);
     }
   };
 
@@ -142,27 +175,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   };
 
   const drawTextElements = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-    // Set text styles
-    ctx.textAlign = 'center';
-    const textColor = labelData.textColor || '#ffffff';
-    ctx.fillStyle = textColor;
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 1;
+    // Skip drawing text elements since they're now overlay inputs
+    // Coffee name and tasting notes are handled by overlay inputs
 
-    const fontFamily = labelData.fontFamily || 'serif';
-
-    // Skip drawing coffee name on canvas since it's now an overlay input
-    // Coffee name is handled by the input overlay
-
-    // Tasting notes
-    if (labelData.tastingNotes) {
-      ctx.font = `16px ${fontFamily}`;
-      const lines = wrapText(ctx, labelData.tastingNotes, canvas.width - 40);
-      lines.forEach((line, index) => {
-        ctx.fillText(line, canvas.width / 2, 140 + (index * 24));
-        ctx.strokeText(line, canvas.width / 2, 140 + (index * 24));
-      });
-    }
+    // Only draw static elements like roast date and branding
 
     // Placeholder for roast date (admin field)
     ctx.font = '14px serif';
@@ -271,6 +287,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
         toast.success('AI Barista improved your coffee name!');
       } else if (type === 'notes') {
         onLabelChange({ ...labelData, tastingNotes: suggestion });
+        // Trigger font size recalculation after AI suggestion
+        setTimeout(() => calculateTastingNotesFontSize(), 100);
         toast.success('AI Barista improved your tasting notes!');
       } else if (type === 'preview') {
         try {
@@ -440,6 +458,59 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                             </Button>
                           </div>
                         </div>
+
+                        {/* Editable Tasting Notes Overlay */}
+                        <div className="absolute top-32 left-1/2 transform -translate-x-1/2 w-4/5 max-w-lg">
+                          <div className="relative flex items-start">
+                            <Textarea
+                              ref={tastingNotesRef}
+                              value={labelData.tastingNotes}
+                              onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
+                              placeholder="Rich chocolate notes with hints of caramel..."
+                              className="bg-transparent border-transparent text-center font-medium shadow-none hover:bg-transparent focus:bg-transparent focus:border-transparent focus:ring-0 resize-none overflow-hidden pr-12 min-h-0 leading-tight"
+                              style={{
+                                fontSize: `${tastingNotesFontSize}px`,
+                                fontFamily: labelData.fontFamily || 'serif',
+                                color: labelData.textColor || '#ffffff',
+                                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                                lineHeight: '1.2',
+                                height: `${Math.max(tastingNotesFontSize * 3.6, 72)}px`,
+                                maxHeight: `${Math.max(tastingNotesFontSize * 3.6, 72)}px`
+                              }}
+                              maxLength={200}
+                              rows={3}
+                              onKeyDown={(e) => {
+                                // Allow natural line breaks but prevent excessive lines
+                                const currentLines = e.currentTarget.value.split('\n').length;
+                                if (e.key === 'Enter' && currentLines >= 3) {
+                                  e.preventDefault();
+                                }
+                              }}
+                              onPaste={(e) => {
+                                // Handle paste events but allow some line breaks
+                                e.preventDefault();
+                                const paste = e.clipboardData.getData('text');
+                                const lines = paste.split(/\r?\n|\r/);
+                                const limitedText = lines.slice(0, 3).join('\n');
+                                const newValue = labelData.tastingNotes + limitedText;
+                                onLabelChange({ ...labelData, tastingNotes: newValue.substring(0, 200) });
+                              }}
+                            />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleAIButtonClick('notes')}
+                              disabled={isGeneratingAI.notes}
+                              className="absolute right-0 top-0 h-8 w-8 p-0 bg-background/80 hover:bg-background/90 rounded-full shadow-lg"
+                            >
+                              {isGeneratingAI.notes ? (
+                                <Sparkles className="w-4 h-4 animate-pulse text-primary" />
+                              ) : (
+                                <Bot className="w-4 h-4 text-primary" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
                       </div>
                       <div className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium shadow-soft">
                         Live Preview
@@ -463,45 +534,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
           {/* Right Side - Controls Panel */}
           <div className="order-1 lg:order-2 space-y-6">
-            {/* Tasting Notes Section */}
-            <Card className="bg-card border-border shadow-soft">
-              <CardHeader className="pb-4">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Bot className="w-5 h-5 text-primary" />
-                  Tasting Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Label htmlFor="tastingNotes" className="flex-1 font-medium">Description</Label>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAIButtonClick('notes')}
-                      disabled={isGeneratingAI.notes}
-                      className="hover-scale"
-                    >
-                      {isGeneratingAI.notes ? (
-                        <Sparkles className="w-3 h-3 animate-pulse" />
-                      ) : (
-                        <Bot className="w-3 h-3" />
-                      )}
-                      AI Enhance
-                    </Button>
-                  </div>
-                  <Textarea
-                    id="tastingNotes"
-                    value={labelData.tastingNotes}
-                    onChange={(e) => onLabelChange({ ...labelData, tastingNotes: e.target.value })}
-                    placeholder="Rich chocolate notes with hints of caramel and a smooth finish..."
-                    className="min-h-[120px] resize-none"
-                    maxLength={200}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Style & Appearance Section */}
             <Card className="bg-card border-border shadow-soft">
               <CardHeader className="pb-4">
