@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,6 +62,18 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [activeTextElement, setActiveTextElement] = useState<'coffeeName' | 'tastingNotes' | null>(null);
 
+  // Performance optimization refs for smooth dragging
+  const animationFrameRef = useRef<number | null>(null);
+  const pendingPositionRef = useRef<{ x: number; y: number } | null>(null);
+  const lastUpdateTimeRef = useRef<number>(0);
+  const draggingRef = useRef<{
+    element: 'coffeeName' | 'tastingNotes' | null;
+    startX: number;
+    startY: number;
+    startElementX: number;
+    startElementY: number;
+  }>({ element: null, startX: 0, startY: 0, startElementX: 0, startElementY: 0 });
+
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
     { value: 'sans-serif', label: 'Sans-Serif (Modern)' },
@@ -84,11 +96,26 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     { value: '#654321', label: 'Dark Brown' },
   ];
 
-  useEffect(() => {
-    drawLabel();
-    calculateFontSize();
-    calculateTastingNotesFontSize();
+  // Optimized redraw with throttling during drag
+  const debouncedDrawLabel = useCallback(() => {
+    const now = Date.now();
+    if (now - lastUpdateTimeRef.current > 33) { // ~30 FPS max during drag
+      drawLabel();
+      calculateFontSize();
+      calculateTastingNotesFontSize();
+      lastUpdateTimeRef.current = now;
+    }
   }, [labelData, previewMode]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      drawLabel();
+      calculateFontSize();
+      calculateTastingNotesFontSize();
+    } else {
+      debouncedDrawLabel();
+    }
+  }, [labelData, previewMode, isDragging, debouncedDrawLabel]);
 
   const calculateFontSize = () => {
     const text = labelData.coffeeName || '';
@@ -473,13 +500,13 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const isAnyAILoading = Object.values(isGeneratingAI).some(Boolean) || isGeneratingImage;
 
   // Unified event coordinate extraction
-  const getEventCoordinates = (e: React.MouseEvent | React.TouchEvent) => {
+  const getEventCoordinates = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if ('touches' in e) {
       const touch = e.touches[0] || e.changedTouches[0];
       return { clientX: touch.clientX, clientY: touch.clientY };
     }
     return { clientX: e.clientX, clientY: e.clientY };
-  };
+  }, []);
 
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent, element: 'coffeeName' | 'tastingNotes') => {
     e.preventDefault();
@@ -496,7 +523,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     setDragOffset({ x: offsetX, y: offsetY });
   };
 
-  const handlePointerMove = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     if (!isDragging || !canvasRef.current) return;
     
     e.preventDefault();
@@ -507,23 +534,53 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const newX = Math.max(0, Math.min(coords.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 344));
     const newY = Math.max(0, Math.min(coords.clientY - canvasRect.top - dragOffset.y, canvasRect.height - (isDragging === 'coffeeName' ? 64 : 72)));
     
-    if (isDragging === 'coffeeName') {
-      onLabelChange({
-        ...labelData,
-        coffeeNamePosition: { x: newX, y: newY }
-      });
-    } else if (isDragging === 'tastingNotes') {
-      onLabelChange({
-        ...labelData,
-        tastingNotesPosition: { x: newX, y: newY }
-      });
-    }
-  };
+    // Store pending position for RAF update
+    pendingPositionRef.current = { x: newX, y: newY };
 
-  const handlePointerUp = () => {
+    // Throttle updates with RAF
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (pendingPositionRef.current && isDragging) {
+        const positionKey = isDragging === 'coffeeName' ? 'coffeeNamePosition' : 'tastingNotesPosition';
+        onLabelChange({
+          ...labelData,
+          [positionKey]: pendingPositionRef.current
+        });
+        pendingPositionRef.current = null;
+      }
+    });
+  }, [isDragging, dragOffset, labelData, onLabelChange, getEventCoordinates]);
+
+  const handlePointerUp = useCallback(() => {
+    // Apply any pending position updates immediately
+    if (pendingPositionRef.current && isDragging) {
+      const positionKey = isDragging === 'coffeeName' ? 'coffeeNamePosition' : 'tastingNotesPosition';
+      onLabelChange({
+        ...labelData,
+        [positionKey]: pendingPositionRef.current
+      });
+      pendingPositionRef.current = null;
+    }
+
+    // Cancel any pending animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
     setIsDragging(null);
     setDragOffset({ x: 0, y: 0 });
-  };
+    
+    // Trigger a full redraw after dragging ends
+    setTimeout(() => {
+      drawLabel();
+      calculateFontSize();
+      calculateTastingNotesFontSize();
+    }, 16); // Next frame
+  }, [isDragging, labelData, onLabelChange]);
 
   // Legacy mouse event handlers for backward compatibility
   const handleMouseDown = (e: React.MouseEvent, element: 'coffeeName' | 'tastingNotes') => handlePointerDown(e, element);
@@ -559,15 +616,13 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               <div className="flex justify-center">
                 <div className="relative">
                   <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
-                     <div 
-                       className="relative"
-                       style={{ touchAction: 'none' }}
-                       onMouseMove={handleMouseMove}
-                       onMouseUp={handleMouseUp}
-                       onMouseLeave={handleMouseUp}
-                       onTouchMove={handleTouchMove}
-                       onTouchEnd={handleTouchEnd}
-                     >
+                      <div 
+                        className="relative"
+                        style={{ touchAction: 'none' }}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
+                        onPointerLeave={handlePointerUp}
+                      >
                       <canvas
                         ref={canvasRef}
                         className="border border-border rounded-lg max-w-full h-auto shadow-soft"
@@ -619,8 +674,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       </div>
                       
                       {/* Coffee Name Overlay Input */}
-                      <div 
-                        className="absolute cursor-move group hover:scale-105 transition-all duration-200"
+                        <div 
+                          className={`absolute cursor-move group transition-all duration-200 ${
+                            isDragging === 'coffeeName' ? 'scale-105 opacity-75 z-30' : 'hover:scale-105 opacity-100 z-20'
+                          }`}
                         style={{
                           top: labelData.coffeeNamePosition?.y || 20,
                           left: labelData.coffeeNamePosition?.x || 20,
@@ -728,8 +785,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       </div>
 
                       {/* Tasting Notes Overlay Input */}
-                      <div 
-                        className="absolute cursor-move group hover:scale-105 transition-all duration-200"
+                        <div 
+                          className={`absolute cursor-move group transition-all duration-200 ${
+                            isDragging === 'tastingNotes' ? 'scale-105 opacity-75 z-30' : 'hover:scale-105 opacity-100 z-20'
+                          }`}
                         style={{
                           top: labelData.tastingNotesPosition?.y || 'auto',
                           bottom: labelData.tastingNotesPosition?.y ? 'auto' : 80,
