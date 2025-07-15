@@ -58,21 +58,29 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [dynamicFontSize, setDynamicFontSize] = useState(32);
   const [tastingNotesFontSize, setTastingNotesFontSize] = useState(16);
-  const [isDragging, setIsDragging] = useState<'coffeeName' | 'tastingNotes' | null>(null);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [activeTextElement, setActiveTextElement] = useState<'coffeeName' | 'tastingNotes' | null>(null);
 
-  // Performance optimization refs for smooth dragging
-  const animationFrameRef = useRef<number | null>(null);
-  const pendingPositionRef = useRef<{ x: number; y: number } | null>(null);
-  const lastUpdateTimeRef = useRef<number>(0);
-  const draggingRef = useRef<{
+  // Optimized drag state - separate from main state for performance
+  const [dragState, setDragState] = useState<{
     element: 'coffeeName' | 'tastingNotes' | null;
+    isDragging: boolean;
     startX: number;
     startY: number;
     startElementX: number;
     startElementY: number;
-  }>({ element: null, startX: 0, startY: 0, startElementX: 0, startElementY: 0 });
+  }>({
+    element: null,
+    isDragging: false,
+    startX: 0,
+    startY: 0,
+    startElementX: 0,
+    startElementY: 0
+  });
+
+  // Performance optimization refs
+  const animationFrameRef = useRef<number | null>(null);
+  const canvasUpdateRef = useRef<number | null>(null);
+  const lastCanvasUpdateRef = useRef<number>(0);
 
   const fontOptions = [
     { value: 'serif', label: 'Serif (Classic)' },
@@ -96,51 +104,57 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     { value: '#654321', label: 'Dark Brown' },
   ];
 
-  // Optimized redraw with throttling during drag
-  const debouncedDrawLabel = useCallback(() => {
-    const now = Date.now();
-    if (now - lastUpdateTimeRef.current > 33) { // ~30 FPS max during drag
-      drawLabel();
-      calculateFontSize();
-      calculateTastingNotesFontSize();
-      lastUpdateTimeRef.current = now;
+  // Optimized canvas updates - throttled and only when not dragging
+  const scheduleCanvasUpdate = useCallback(() => {
+    if (canvasUpdateRef.current) {
+      cancelAnimationFrame(canvasUpdateRef.current);
     }
-  }, [labelData, previewMode]);
+    
+    canvasUpdateRef.current = requestAnimationFrame(() => {
+      const now = Date.now();
+      if (now - lastCanvasUpdateRef.current > 16) { // 60 FPS max
+        drawLabel();
+        calculateFontSize();
+        calculateTastingNotesFontSize();
+        lastCanvasUpdateRef.current = now;
+      }
+    });
+  }, []);
 
   useEffect(() => {
-    if (!isDragging) {
-      drawLabel();
-      calculateFontSize();
-      calculateTastingNotesFontSize();
-    } else {
-      debouncedDrawLabel();
+    // Only update canvas when not actively dragging
+    if (!dragState.isDragging) {
+      scheduleCanvasUpdate();
     }
-  }, [labelData, previewMode, isDragging, debouncedDrawLabel]);
+    
+    return () => {
+      if (canvasUpdateRef.current) {
+        cancelAnimationFrame(canvasUpdateRef.current);
+      }
+    };
+  }, [labelData, previewMode, dragState.isDragging, scheduleCanvasUpdate]);
 
-  const calculateFontSize = () => {
+  const calculateFontSize = useCallback(() => {
     const text = labelData.coffeeName || '';
-    const boxHeight = 64; // Fixed box height in pixels
-    const maxLineLength = 15; // Optimal characters per line for readability
+    const boxHeight = 64;
+    const maxLineLength = 15;
     
     if (text.length === 0) {
       setDynamicFontSize(32);
     } else if (text.length <= maxLineLength) {
-      // Single line - scale up to fill box
       const scaleFactor = Math.min(2.0, Math.max(1.0, boxHeight / 32));
       setDynamicFontSize(Math.min(48, 32 * scaleFactor));
     } else if (text.length <= maxLineLength * 2) {
-      // Two lines - scale to fit nicely
       const scaleFactor = Math.min(1.5, Math.max(0.8, boxHeight / 40));
       setDynamicFontSize(Math.max(16, Math.min(32, 32 * scaleFactor)));
     } else {
-      // Longer text - scale down to minimum readable size
       const excess = text.length - (maxLineLength * 2);
       const scaleFactor = Math.max(0.25, 0.8 - (excess * 0.02));
       setDynamicFontSize(Math.max(8, Math.round(32 * scaleFactor)));
     }
-  };
+  }, [labelData.coffeeName]);
 
-  const calculateTastingNotesFontSize = () => {
+  const calculateTastingNotesFontSize = useCallback(() => {
     const text = labelData.tastingNotes || '';
     const boxHeight = 72;
     const minFontSize = 8;
@@ -149,37 +163,28 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const maxLines = 3;
     
     if (text.length === 0) {
-      // For empty field, size to fit placeholder "Edit Coffee Description" on one line
-      // Estimate: 24 characters, container width ~280px, so ~11px per char max
-      const placeholderFontSize = Math.min(20, Math.floor(280 / 24 * 1.2)); // Conservative sizing
+      const placeholderFontSize = Math.min(20, Math.floor(280 / 24 * 1.2));
       setTastingNotesFontSize(placeholderFontSize);
       return;
     }
 
-    // Estimate actual lines based on word wrapping (more accurate)
     const wordsCount = text.split(/\s+/).length;
     const avgWordLength = text.length / Math.max(wordsCount, 1);
-    const estimatedCharsPerLine = Math.floor(280 / Math.max(avgWordLength * 8, 8)); // Rough estimate based on container width
+    const estimatedCharsPerLine = Math.floor(280 / Math.max(avgWordLength * 8, 8));
     const estimatedLines = Math.ceil(text.length / estimatedCharsPerLine);
     
-    // Calculate font size to fit exactly in the box
     const targetLines = Math.min(estimatedLines, maxLines);
     const idealFontSize = (boxHeight / (targetLines * lineHeight));
     
-    // Apply scaling based on content density
     let finalSize;
     if (text.length <= 20) {
-      // Very short - use large font
       finalSize = Math.min(maxFontSize, idealFontSize * 1.5);
     } else if (text.length <= 60) {
-      // Medium length - optimal size
       finalSize = Math.min(maxFontSize, idealFontSize);
     } else if (text.length <= 150) {
-      // Long text - scale down gradually
       const scaleFactor = 1.0 - ((text.length - 60) / 180) * 0.4;
       finalSize = Math.max(minFontSize, idealFontSize * scaleFactor);
     } else {
-      // Very long - minimum size with warning
       finalSize = minFontSize;
       const maxCapacity = Math.floor((boxHeight / (minFontSize * lineHeight)) * estimatedCharsPerLine);
       if (text.length > maxCapacity) {
@@ -189,32 +194,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     
     const newSize = Math.round(Math.max(minFontSize, Math.min(maxFontSize, finalSize)));
     setTastingNotesFontSize(newSize);
-    
-    // Debug logging
-    console.log('Tasting Notes Font Calc:', {
-      textLength: text.length,
-      estimatedLines,
-      targetLines,
-      idealFontSize: Math.round(idealFontSize),
-      finalSize: newSize
-    });
-  };
+  }, [labelData.tastingNotes]);
 
-  const drawLabel = () => {
+  const drawLabel = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Set canvas dimensions (4" x 6" at 96 DPI for preview)
-    canvas.width = 384; // 4 inches * 96 DPI
-    canvas.height = 576; // 6 inches * 96 DPI
-
-    // Clear canvas
+    canvas.width = 384;
+    canvas.height = 576;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw background
     if (labelData.backgroundImage) {
       const img = document.createElement('img');
       img.onload = () => {
@@ -224,7 +216,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       };
       img.src = labelData.backgroundImage;
     } else {
-      // Default light gray gradient background
       const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
       gradient.addColorStop(0, '#f5f5f5');
       gradient.addColorStop(1, '#e5e5e5');
@@ -233,14 +224,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       drawTextElements(ctx, canvas);
       if (previewMode) drawWatermark(ctx, canvas);
     }
-  };
+  }, [labelData.backgroundImage, previewMode]);
 
   const drawTextElements = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
-    // Skip drawing text elements since they're now overlay inputs
-    // Coffee name and tasting notes are handled by overlay inputs
-
-    // Product Information Section - 1" above branding text (96 pixels at 96 DPI)
-    // Use actual product info or generate placeholder data
     const displayProductInfo = productInfo || {
       weight: '12 oz',
       grind: 'whole-bean' as const,
@@ -254,49 +240,24 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.shadowBlur = 2;
     ctx.fillStyle = labelData.productInfoTextColor || '#000000';
     
-    const productInfoY = canvas.height - 156; // 1" above branding text
+    const productInfoY = canvas.height - 156;
     const today = new Date();
     const roastDate = today.toLocaleDateString();
     
-    // Line 1: Weight and Grind Type
     ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
     ctx.fillText(`${displayProductInfo.weight} • ${displayProductInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'}`, canvas.width / 2, productInfoY);
-    
-    // Line 2: Regular/Decaf
-    ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
     ctx.fillText(`${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, canvas.width / 2, productInfoY + 15);
-    
-    // Line 3: Roast Date
-    ctx.font = `12px ${labelData.productInfoFontFamily || 'serif'}`;
     ctx.fillText(`Roast Date: ${roastDate}`, canvas.width / 2, productInfoY + 30);
 
-    // JavaMania Coffee Roastery branding at bottom - ensure it's always visible
-    ctx.textAlign = 'center';
-    
-    // Add text shadow for better visibility against any background
-    ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
-    ctx.shadowOffsetX = 1;
-    ctx.shadowOffsetY = 1;
-    ctx.shadowBlur = 2;
-    ctx.fillStyle = '#000000'; // Use black for better contrast
-    
-    // Line 1: Custom Roasted By JavaMania Coffee Roastery
+    ctx.fillStyle = '#000000';
     ctx.font = 'bold 14px serif';
     ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', canvas.width / 2, canvas.height - 60);
-    
-    // Line 2: Libertyville IL
     ctx.font = '12px serif';
     ctx.fillText('Libertyville IL', canvas.width / 2, canvas.height - 45);
-    
-    // Line 3: www.javamania.com
-    ctx.font = '12px serif';
     ctx.fillText('www.javamania.com', canvas.width / 2, canvas.height - 30);
-    
-    // Line 4: 100% Arabica Coffee & Natural Flavors
     ctx.font = '10px serif';
     ctx.fillText('100% Arabica Coffee & Natural Flavors', canvas.width / 2, canvas.height - 15);
     
-    // Reset shadow for other elements
     ctx.shadowColor = 'transparent';
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
@@ -315,24 +276,121 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.restore();
   };
 
-  const wrapText = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number) => {
-    const words = text.split(' ');
-    const lines = [];
-    let currentLine = words[0];
+  // Optimized drag handlers
+  const handlePointerDown = useCallback((event: React.PointerEvent, element: 'coffeeName' | 'tastingNotes') => {
+    event.preventDefault();
+    event.stopPropagation();
+    
+    const target = event.currentTarget as HTMLElement;
+    target.setPointerCapture(event.pointerId);
+    
+    const rect = target.getBoundingClientRect();
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (!canvasRect) return;
+    
+    const canvasX = rect.left - canvasRect.left + rect.width / 2;
+    const canvasY = rect.top - canvasRect.top + rect.height / 2;
+    
+    setDragState({
+      element,
+      isDragging: true,
+      startX: event.clientX,
+      startY: event.clientY,
+      startElementX: canvasX,
+      startElementY: canvasY
+    });
 
-    for (let i = 1; i < words.length; i++) {
-      const word = words[i];
-      const width = ctx.measureText(currentLine + ' ' + word).width;
-      if (width < maxWidth) {
-        currentLine += ' ' + word;
-      } else {
-        lines.push(currentLine);
-        currentLine = word;
+    // Visual feedback
+    target.style.cursor = 'grabbing';
+    target.style.transform = 'scale(1.05)';
+    target.style.zIndex = '1000';
+  }, []);
+
+  const handlePointerMove = useCallback((event: React.PointerEvent) => {
+    if (!dragState.isDragging || !dragState.element) return;
+    
+    event.preventDefault();
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    
+    animationFrameRef.current = requestAnimationFrame(() => {
+      const canvasRect = canvasRef.current?.getBoundingClientRect();
+      if (!canvasRect) return;
+      
+      const deltaX = event.clientX - dragState.startX;
+      const deltaY = event.clientY - dragState.startY;
+      
+      const newX = dragState.startElementX + deltaX;
+      const newY = dragState.startElementY + deltaY;
+      
+      const clampedX = Math.max(50, Math.min(canvasRect.width - 50, newX));
+      const clampedY = Math.max(30, Math.min(canvasRect.height - 30, newY));
+      
+      // Visual-only update during drag
+      const target = event.currentTarget as HTMLElement;
+      if (target) {
+        target.style.left = `${clampedX - target.offsetWidth / 2}px`;
+        target.style.top = `${clampedY - target.offsetHeight / 2}px`;
+      }
+    });
+  }, [dragState]);
+
+  const handlePointerUp = useCallback((event: React.PointerEvent) => {
+    if (!dragState.isDragging || !dragState.element) return;
+    
+    const target = event.currentTarget as HTMLElement;
+    target.releasePointerCapture(event.pointerId);
+    
+    // Clean up visual feedback
+    target.style.cursor = '';
+    target.style.transform = '';
+    target.style.zIndex = '';
+    
+    // Calculate final position
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (canvasRect) {
+      const deltaX = event.clientX - dragState.startX;
+      const deltaY = event.clientY - dragState.startY;
+      
+      const newX = dragState.startElementX + deltaX;
+      const newY = dragState.startElementY + deltaY;
+      
+      const clampedX = Math.max(50, Math.min(canvasRect.width - 50, newX));
+      const clampedY = Math.max(30, Math.min(canvasRect.height - 30, newY));
+      
+      // Commit final position to state
+      if (dragState.element === 'coffeeName') {
+        onLabelChange({
+          ...labelData,
+          coffeeNamePosition: { x: clampedX, y: clampedY }
+        });
+      } else if (dragState.element === 'tastingNotes') {
+        onLabelChange({
+          ...labelData,
+          tastingNotesPosition: { x: clampedX, y: clampedY }
+        });
       }
     }
-    lines.push(currentLine);
-    return lines;
-  };
+    
+    setDragState({
+      element: null,
+      isDragging: false,
+      startX: 0,
+      startY: 0,
+      startElementX: 0,
+      startElementY: 0
+    });
+    
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // Schedule canvas update after drag ends
+    setTimeout(() => scheduleCanvasUpdate(), 0);
+  }, [dragState, labelData, onLabelChange, scheduleCanvasUpdate]);
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -395,12 +453,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
       if (type === 'name') {
         onLabelChange({ ...labelData, coffeeName: suggestion });
-        // Trigger font size recalculation after AI suggestion
         setTimeout(() => calculateFontSize(), 100);
         toast.success('AI Barista improved your coffee name!');
       } else if (type === 'notes') {
         onLabelChange({ ...labelData, tastingNotes: suggestion });
-        // Trigger font size recalculation after AI suggestion
         setTimeout(() => calculateTastingNotesFontSize(), 100);
         toast.success('AI Barista improved your tasting notes!');
       } else if (type === 'preview') {
@@ -470,7 +526,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       }
 
       if (data.error) {
-        // Handle specific OpenAI API errors
         const errorMessage = data.details || data.error;
         if (errorMessage.includes('content policy') || errorMessage.includes('policy')) {
           toast.error('Content not allowed. Please try coffee-related imagery like beans, cups, roasting, or coffee shops.');
@@ -499,113 +554,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   const isAnyAILoading = Object.values(isGeneratingAI).some(Boolean) || isGeneratingImage;
 
-  // Unified event coordinate extraction
-  const getEventCoordinates = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if ('touches' in e) {
-      const touch = e.touches[0] || e.changedTouches[0];
-      return { clientX: touch.clientX, clientY: touch.clientY };
-    }
-    return { clientX: e.clientX, clientY: e.clientY };
-  }, []);
-
-  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent, element: 'coffeeName' | 'tastingNotes') => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(element);
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const canvasRect = canvasRef.current?.getBoundingClientRect();
-    if (!canvasRect) return;
-    
-    const coords = getEventCoordinates(e);
-    const offsetX = coords.clientX - rect.left;
-    const offsetY = coords.clientY - rect.top;
-    setDragOffset({ x: offsetX, y: offsetY });
-  };
-
-  const handlePointerMove = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    if (!isDragging || !canvasRef.current) return;
-    
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const canvasRect = canvasRef.current.getBoundingClientRect();
-    const coords = getEventCoordinates(e);
-    const newX = Math.max(0, Math.min(coords.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 344));
-    const newY = Math.max(0, Math.min(coords.clientY - canvasRect.top - dragOffset.y, canvasRect.height - (isDragging === 'coffeeName' ? 64 : 72)));
-    
-    // Store pending position for RAF update
-    pendingPositionRef.current = { x: newX, y: newY };
-
-    // Throttle updates with RAF
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(() => {
-      if (pendingPositionRef.current && isDragging) {
-        const positionKey = isDragging === 'coffeeName' ? 'coffeeNamePosition' : 'tastingNotesPosition';
-        onLabelChange({
-          ...labelData,
-          [positionKey]: pendingPositionRef.current
-        });
-        pendingPositionRef.current = null;
-      }
-    });
-  }, [isDragging, dragOffset, labelData, onLabelChange, getEventCoordinates]);
-
-  const handlePointerUp = useCallback(() => {
-    // Apply any pending position updates immediately
-    if (pendingPositionRef.current && isDragging) {
-      const positionKey = isDragging === 'coffeeName' ? 'coffeeNamePosition' : 'tastingNotesPosition';
-      onLabelChange({
-        ...labelData,
-        [positionKey]: pendingPositionRef.current
-      });
-      pendingPositionRef.current = null;
-    }
-
-    // Cancel any pending animation frame
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-
-    setIsDragging(null);
-    setDragOffset({ x: 0, y: 0 });
-    
-    // Trigger a full redraw after dragging ends
-    setTimeout(() => {
-      drawLabel();
-      calculateFontSize();
-      calculateTastingNotesFontSize();
-    }, 16); // Next frame
-  }, [isDragging, labelData, onLabelChange]);
-
-  // Legacy mouse event handlers for backward compatibility
-  const handleMouseDown = (e: React.MouseEvent, element: 'coffeeName' | 'tastingNotes') => handlePointerDown(e, element);
-  const handleMouseMove = (e: React.MouseEvent) => handlePointerMove(e);
-  const handleMouseUp = () => handlePointerUp();
-
-  // Touch event handlers
-  const handleTouchStart = (e: React.TouchEvent, element: 'coffeeName' | 'tastingNotes') => handlePointerDown(e, element);
-  const handleTouchMove = (e: React.TouchEvent) => handlePointerMove(e);
-  const handleTouchEnd = () => handlePointerUp();
-
   const resetPositions = () => {
     onLabelChange({
       ...labelData,
-      coffeeNamePosition: undefined,
-      tastingNotesPosition: undefined
+      coffeeNamePosition: { x: 192, y: 100 },
+      tastingNotesPosition: { x: 192, y: 350 }
     });
     toast.success('Text positions reset to default');
   };
 
+  // Calculate positions
+  const coffeeNamePosition = labelData.coffeeNamePosition || { x: 192, y: 100 };
+  const tastingNotesPosition = labelData.tastingNotesPosition || { x: 192, y: 350 };
+
   return (
     <div className="min-h-screen bg-gradient-warmth p-4">
       <div className="max-w-6xl mx-auto space-y-8">
-
-        {/* Top Section - Preview */}
         <Card className="bg-gradient-cream border-border shadow-elegant">
           <CardContent className="p-8">
             <div className="text-center space-y-6">
@@ -616,20 +580,20 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               <div className="flex justify-center">
                 <div className="relative">
                   <div className="border-4 border-primary/20 rounded-xl p-6 bg-background/50 backdrop-blur shadow-glow">
-                      <div 
-                        className="relative"
-                        style={{ touchAction: 'none' }}
-                        onPointerMove={handlePointerMove}
-                        onPointerUp={handlePointerUp}
-                        onPointerLeave={handlePointerUp}
-                      >
+                    <div 
+                      className="relative"
+                      style={{ touchAction: 'none' }}
+                      onPointerMove={handlePointerMove}
+                      onPointerUp={handlePointerUp}
+                      onPointerLeave={handlePointerUp}
+                    >
                       <canvas
                         ref={canvasRef}
                         className="border border-border rounded-lg max-w-full h-auto shadow-soft"
                         style={{ maxWidth: '500px', height: 'auto' }}
                       />
                     
-                      {/* Background Options Overlay - Centered */}
+                      {/* Background Options Overlay */}
                       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 flex flex-row gap-2 z-50">
                         <input
                           ref={fileInputRef}
@@ -674,29 +638,27 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       </div>
                       
                       {/* Coffee Name Overlay Input */}
-                        <div 
-                          className={`absolute cursor-move group transition-all duration-200 ${
-                            isDragging === 'coffeeName' ? 'scale-105 opacity-75 z-30' : 'hover:scale-105 opacity-100 z-20'
-                          }`}
+                      <div 
+                        className={`absolute cursor-move group transition-all duration-200 ${
+                          dragState.isDragging && dragState.element === 'coffeeName' ? 'scale-105 opacity-75 z-30' : 'hover:scale-105 opacity-100 z-20'
+                        }`}
                         style={{
-                          top: labelData.coffeeNamePosition?.y || 20,
-                          left: labelData.coffeeNamePosition?.x || 20,
-                          right: labelData.coffeeNamePosition?.x ? 'auto' : 20,
-                          width: labelData.coffeeNamePosition?.x ? '344px' : 'auto',
-                          touchAction: 'none'
+                          position: 'absolute',
+                          left: coffeeNamePosition.x - 150,
+                          top: coffeeNamePosition.y - 32,
+                          willChange: 'transform',
                         }}
-                        onMouseDown={(e) => handleMouseDown(e, 'coffeeName')}
-                        onTouchStart={(e) => handleTouchStart(e, 'coffeeName')}
+                        onPointerDown={(e) => handlePointerDown(e, 'coffeeName')}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
                       >
                         <div className="relative group-hover:ring-2 group-hover:ring-primary group-hover:shadow-lg rounded-lg transition-all duration-300 bg-gradient-to-r from-primary/5 to-primary/10 group-hover:from-primary/10 group-hover:to-primary/20 border border-primary/20 group-hover:border-primary/40">
-                          {/* Drag Handle */}
                           <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <div className="bg-primary text-primary-foreground p-1 rounded-md shadow-lg">
                               <Move className="w-4 h-4" />
                             </div>
                           </div>
                           
-                          {/* Grip Pattern */}
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 transition-opacity duration-200">
                             <GripVertical className="w-3 h-3 text-primary" />
                           </div>
@@ -715,9 +677,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                               color: labelData.textColor || '#000000',
                               height: '64px',
                               lineHeight: '1.2',
-                              textAlign: 'center'
+                              textAlign: 'center',
+                              width: '300px'
                             }}
-                            onMouseDown={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => e.stopPropagation()}
                           />
                           
                           {/* Floating Toolbar for Coffee Name */}
@@ -785,30 +748,27 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       </div>
 
                       {/* Tasting Notes Overlay Input */}
-                        <div 
-                          className={`absolute cursor-move group transition-all duration-200 ${
-                            isDragging === 'tastingNotes' ? 'scale-105 opacity-75 z-30' : 'hover:scale-105 opacity-100 z-20'
-                          }`}
+                      <div 
+                        className={`absolute cursor-move group transition-all duration-200 ${
+                          dragState.isDragging && dragState.element === 'tastingNotes' ? 'scale-105 opacity-75 z-30' : 'hover:scale-105 opacity-100 z-20'
+                        }`}
                         style={{
-                          top: labelData.tastingNotesPosition?.y || 'auto',
-                          bottom: labelData.tastingNotesPosition?.y ? 'auto' : 80,
-                          left: labelData.tastingNotesPosition?.x || 20,
-                          right: labelData.tastingNotesPosition?.x ? 'auto' : 20,
-                          width: labelData.tastingNotesPosition?.x ? '344px' : 'auto',
-                          touchAction: 'none'
+                          position: 'absolute',
+                          left: tastingNotesPosition.x - 140,
+                          top: tastingNotesPosition.y - 36,
+                          willChange: 'transform',
                         }}
-                        onMouseDown={(e) => handleMouseDown(e, 'tastingNotes')}
-                        onTouchStart={(e) => handleTouchStart(e, 'tastingNotes')}
+                        onPointerDown={(e) => handlePointerDown(e, 'tastingNotes')}
+                        onPointerMove={handlePointerMove}
+                        onPointerUp={handlePointerUp}
                       >
                         <div className="relative group-hover:ring-2 group-hover:ring-secondary group-hover:shadow-lg rounded-lg transition-all duration-300 bg-gradient-to-r from-secondary/5 to-secondary/10 group-hover:from-secondary/10 group-hover:to-secondary/20 border border-secondary/20 group-hover:border-secondary/40">
-                          {/* Drag Handle */}
                           <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             <div className="bg-secondary text-secondary-foreground p-1 rounded-md shadow-lg">
                               <Move className="w-4 h-4" />
                             </div>
                           </div>
                           
-                          {/* Grip Pattern */}
                           <div className="absolute left-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-60 transition-opacity duration-200">
                             <GripVertical className="w-3 h-3 text-secondary" />
                           </div>
@@ -827,9 +787,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                               color: labelData.textColor || '#000000',
                               height: '72px',
                               lineHeight: '1.3',
-                              textAlign: 'center'
+                              textAlign: 'center',
+                              width: '280px'
                             }}
-                            onMouseDown={(e) => e.stopPropagation()}
+                            onPointerDown={(e) => e.stopPropagation()}
                           />
                           
                           {/* Floating Toolbar for Tasting Notes */}
@@ -902,7 +863,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                     </div>
                   </div>
                   
-                  {/* Position Controls */}
                   <div className="flex justify-center mt-4">
                     <Button
                       onClick={resetPositions}
@@ -913,62 +873,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       Reset Text Positions
                     </Button>
                   </div>
-                  
-                  {/* Product Information Styling Controls */}
-                  <div className="mt-6 p-4 bg-muted/30 rounded-lg border border-border/50">
-                      <h4 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
-                        <Badge className="w-4 h-4" />
-                        Product Information Style
-                      </h4>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">Font Family</Label>
-                          <Select 
-                            value={labelData.productInfoFontFamily || 'serif'} 
-                            onValueChange={(value) => onLabelChange({ ...labelData, productInfoFontFamily: value })}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {fontOptions.map(font => (
-                                <SelectItem key={font.value} value={font.value} className="text-xs">
-                                  <span style={{ fontFamily: font.value }}>{font.label}</span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        
-                        <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">Text Color</Label>
-                          <Select 
-                            value={labelData.productInfoTextColor || '#000000'} 
-                            onValueChange={(value) => onLabelChange({ ...labelData, productInfoTextColor: value })}
-                          >
-                            <SelectTrigger className="h-8 text-xs">
-                              <div className="flex items-center gap-2">
-                                <div className="w-3 h-3 rounded border border-border" style={{ backgroundColor: labelData.productInfoTextColor || '#000000' }}></div>
-                                <span className="text-xs">Color</span>
-                              </div>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {colorOptions.map(color => (
-                                <SelectItem key={color.value} value={color.value} className="text-xs">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-3 h-3 rounded border border-border" style={{ backgroundColor: color.value }}></div>
-                                    {color.label}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">
-                        Shows: Weight • Grind Type • Regular/Decaf • Roast Date (auto-generated)
-                      </p>
-                    </div>
                 </div>
               </div>
 
@@ -984,11 +888,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             </div>
           </CardContent>
         </Card>
-
       </div>
 
-      {/* AI Barista Dialog */}
-      <Dialog open={!!aiDialogOpen} onOpenChange={(open) => !open && setAiDialogOpen(null)}>
+      {/* AI Dialogs */}
+      <Dialog open={!!aiDialogOpen && aiDialogOpen !== 'image'} onOpenChange={(open) => !open && setAiDialogOpen(null)}>
         <DialogContent className="bg-background border-border">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -996,7 +899,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               AI Barista Assistance
             </DialogTitle>
             <DialogDescription>
-              How would you like to improve this {aiDialogOpen === 'name' ? 'coffee name' : aiDialogOpen === 'notes' ? 'tasting notes' : 'label style'}?
+              How would you like to improve this {aiDialogOpen === 'name' ? 'coffee name' : 'tasting notes'}?
             </DialogDescription>
           </DialogHeader>
           
@@ -1010,23 +913,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 placeholder={
                   aiDialogOpen === 'name' 
                     ? "e.g., Make it sound more premium and artisanal"
-                    : aiDialogOpen === 'notes'
-                    ? "e.g., Add more detail about chocolate and caramel notes"
-                    : "e.g., Make it more elegant and readable"
+                    : "e.g., Add more detail about chocolate and caramel notes"
                 }
                 className="min-h-[80px]"
               />
             </div>
-            
-            {aiDialogOpen && (
-              <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded">
-                <strong>Current {aiDialogOpen === 'name' ? 'name' : 'notes'}:</strong>
-                <p className="mt-1">
-                  {aiDialogOpen === 'name' && (labelData.coffeeName || 'Empty')}
-                  {aiDialogOpen === 'notes' && (labelData.tastingNotes || 'Empty')}
-                </p>
-              </div>
-            )}
           </div>
 
           <DialogFooter>
@@ -1044,7 +935,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
         </DialogContent>
       </Dialog>
 
-      {/* AI Image Generation Dialog */}
       <Dialog open={aiDialogOpen === 'image'} onOpenChange={(open) => !open && setAiDialogOpen(null)}>
         <DialogContent className="bg-background border-border">
           <DialogHeader>
@@ -1053,7 +943,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               AI Background Image Generator
             </DialogTitle>
             <DialogDescription>
-              Describe the background image you'd like for your coffee label. The AI will generate an image without any text.
+              Describe the background image you'd like for your coffee label.
             </DialogDescription>
           </DialogHeader>
           
@@ -1064,7 +954,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 id="imagePrompt"
                 value={imagePrompt}
                 onChange={(e) => setImagePrompt(e.target.value)}
-                placeholder="e.g., Coffee beans scattered on rustic wood, warm lighting, cozy coffee shop atmosphere, vintage coffee plantation"
+                placeholder="e.g., Coffee beans scattered on rustic wood, warm lighting"
                 className="min-h-[80px]"
               />
             </div>
@@ -1075,7 +965,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 id="imageStyle"
                 value={imageStyle}
                 onChange={(e) => setImageStyle(e.target.value)}
-                placeholder="e.g., watercolor, vintage, minimalist, photographic, artistic"
+                placeholder="e.g., watercolor, vintage, minimalist"
               />
             </div>
           </div>
