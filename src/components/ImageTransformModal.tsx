@@ -128,7 +128,7 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full overflow-auto">
         <DialogHeader>
           <DialogTitle>Transform Background Image</DialogTitle>
         </DialogHeader>
@@ -136,12 +136,13 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
         <div className="space-y-4">
           {/* Preview Canvas */}
           <div className="flex justify-center">
-            <div className="border-2 border-muted rounded-lg p-2 bg-muted/20">
+            <div className="border-2 border-muted rounded-lg p-2 bg-muted/20 w-fit">
               <canvas
                 ref={previewRef}
                 width={384}
                 height={512}
-                className="border border-border rounded cursor-move"
+                className="border border-border rounded cursor-move max-w-[min(60vw,300px)] max-h-[min(80vh,400px)] w-auto h-auto"
+                style={{ aspectRatio: '384/512' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
@@ -151,7 +152,7 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
           </div>
 
           {/* Controls */}
-          <div className="space-y-4">
+          <div className="space-y-4 px-2">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Zoom</label>
@@ -174,7 +175,7 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
             </div>
 
             {/* Preset Buttons */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 onClick={handlePresetFit}
                 variant="outline"
@@ -202,17 +203,17 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center">
+            <p className="text-xs text-muted-foreground text-center px-2">
               Drag the image to reposition • Use slider to zoom
             </p>
           </div>
         </div>
 
-        <DialogFooter>
-          <Button onClick={onClose} variant="outline">
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button onClick={onClose} variant="outline" className="w-full sm:w-auto">
             Cancel
           </Button>
-          <Button onClick={onApply}>
+          <Button onClick={onApply} className="w-full sm:w-auto">
             Apply Changes
           </Button>
         </DialogFooter>
