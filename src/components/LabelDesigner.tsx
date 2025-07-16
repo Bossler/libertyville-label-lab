@@ -94,15 +94,28 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
         ctx.rect(0, 0, canvas.width, canvas.height);
         ctx.clip();
         
-        // Calculate scaled dimensions
-        const scaledWidth = img.width * transform.scale;
-        const scaledHeight = img.height * transform.scale;
+        // Calculate fit-to-canvas scale (to ensure entire image can be visible)
+        const fitToCanvasScale = Math.min(
+          canvas.width / img.width,
+          canvas.height / img.height
+        );
+        
+        // Apply user transform scale on top of fit-to-canvas scale
+        const finalScale = fitToCanvasScale * transform.scale;
+        
+        // Calculate final dimensions
+        const scaledWidth = img.width * finalScale;
+        const scaledHeight = img.height * finalScale;
+        
+        // Center the image by default, then apply user offsets
+        const centeredX = (canvas.width - scaledWidth) / 2;
+        const centeredY = (canvas.height - scaledHeight) / 2;
         
         // Draw the transformed image
         ctx.drawImage(
           img,
-          transform.offsetX,
-          transform.offsetY,
+          centeredX + transform.offsetX,
+          centeredY + transform.offsetY,
           scaledWidth,
           scaledHeight
         );
@@ -517,12 +530,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       if (error) throw new Error(error.message);
 
       if (data.image) {
-        // Set image with transform to show entire image (zoomed out)
+        // Set image with default transform (entire image will be visible due to fit-to-canvas logic)
         onLabelChange({ 
           ...labelData, 
           backgroundImage: data.image,
           backgroundImageTransform: { 
-            scale: 0.8, // Scale down to ensure entire image is visible
+            scale: 1.0, // Default scale - entire image will be visible due to fit-to-canvas calculation
             offsetX: 0, 
             offsetY: 0 
           }
