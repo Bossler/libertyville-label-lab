@@ -128,20 +128,20 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[95vw] max-h-[95vh] w-full overflow-auto">
-        <DialogHeader>
-          <DialogTitle>Transform Background Image</DialogTitle>
+      <DialogContent className="max-w-[90vw] max-h-[90vh] w-full overflow-auto p-3 sm:p-6">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-lg">Transform Background Image</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4">
+        <div className="space-y-3">
           {/* Preview Canvas */}
           <div className="flex justify-center">
-            <div className="border-2 border-muted rounded-lg p-2 bg-muted/20 w-fit">
+            <div className="border-2 border-muted rounded-lg p-1 bg-muted/20 w-fit">
               <canvas
                 ref={previewRef}
                 width={384}
                 height={512}
-                className="border border-border rounded cursor-move max-w-[min(60vw,300px)] max-h-[min(80vh,400px)] w-auto h-auto"
+                className="border border-border rounded cursor-move max-w-[min(50vw,240px)] max-h-[min(50vh,320px)] w-auto h-auto"
                 style={{ aspectRatio: '384/512' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -152,16 +152,16 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
           </div>
 
           {/* Controls */}
-          <div className="space-y-4 px-2">
-            <div className="space-y-2">
+          <div className="space-y-3 px-1">
+            <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium">Zoom</label>
-                <span className="text-sm text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {Math.round(transform.scale * 100)}%
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <ZoomOut className="w-4 h-4" />
+                <ZoomOut className="w-3 h-3" />
                 <Slider
                   value={[transform.scale * 100]}
                   onValueChange={handleZoomChange}
@@ -170,50 +170,50 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
                   step={5}
                   className="flex-1"
                 />
-                <ZoomIn className="w-4 h-4" />
+                <ZoomIn className="w-3 h-3" />
               </div>
             </div>
 
             {/* Preset Buttons */}
-            <div className="flex flex-col sm:flex-row gap-2">
+            <div className="grid grid-cols-3 gap-1 sm:gap-2">
               <Button
                 onClick={handlePresetFit}
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="text-xs px-2 py-1 h-8"
               >
-                Fit to Label
+                Fit
               </Button>
               <Button
                 onClick={handlePresetFill}
                 variant="outline"
                 size="sm"
-                className="flex-1"
+                className="text-xs px-2 py-1 h-8"
               >
-                Fill Label
+                Fill
               </Button>
               <Button
                 onClick={handleReset}
                 variant="outline"
                 size="sm"
-                className="flex items-center gap-1"
+                className="flex items-center gap-1 text-xs px-2 py-1 h-8"
               >
-                <RotateCcw className="w-3 h-3" />
+                <RotateCcw className="w-2 h-2" />
                 Reset
               </Button>
             </div>
 
-            <p className="text-xs text-muted-foreground text-center px-2">
-              Drag the image to reposition • Use slider to zoom
+            <p className="text-xs text-muted-foreground text-center px-1">
+              Drag to reposition • Slider to zoom
             </p>
           </div>
         </div>
 
-        <DialogFooter className="flex-col sm:flex-row gap-2">
-          <Button onClick={onClose} variant="outline" className="w-full sm:w-auto">
+        <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
+          <Button onClick={onClose} variant="outline" className="w-full sm:w-auto h-8 text-sm">
             Cancel
           </Button>
-          <Button onClick={onApply} className="w-full sm:w-auto">
+          <Button onClick={onApply} className="w-full sm:w-auto h-8 text-sm">
             Apply Changes
           </Button>
         </DialogFooter>
