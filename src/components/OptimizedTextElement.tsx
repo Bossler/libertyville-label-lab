@@ -47,8 +47,8 @@ export const OptimizedTextElement = memo<OptimizedTextElementProps>(({
 
   const textStyle: React.CSSProperties = {
     position: 'absolute',
-    left: `${position.x - maxWidth / 2}px`,
-    top: `${position.y - maxHeight / 2}px`,
+    left: `${position.x}px`,
+    top: `${position.y}px`,
     width: `${maxWidth}px`,
     height: `${maxHeight}px`,
     fontSize: `${fontSize}px`,

@@ -235,9 +235,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.restore();
   };
 
-  // Position helpers
-  const coffeeNamePosition = labelData.coffeeNamePosition || { x: 192, y: 80 };
-  const tastingNotesPosition = labelData.tastingNotesPosition || { x: 192, y: 200 };
+  // Position helpers - center position for 384px wide canvas
+  const coffeeNamePosition = labelData.coffeeNamePosition || { x: 192 - 150, y: 80 - 32 };
+  const tastingNotesPosition = labelData.tastingNotesPosition || { x: 192 - 140, y: 200 - 36 };
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -393,8 +393,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const resetPositions = () => {
     onLabelChange({
       ...labelData,
-      coffeeNamePosition: { x: 192, y: 80 },
-      tastingNotesPosition: { x: 192, y: 200 }
+      coffeeNamePosition: { x: 192 - 150, y: 80 - 32 },
+      tastingNotesPosition: { x: 192 - 140, y: 200 - 36 }
     });
   };
 
