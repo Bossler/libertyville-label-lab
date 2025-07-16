@@ -502,8 +502,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
       if (error) throw new Error(error.message);
 
-      if (data.imageUrl) {
-        onLabelChange({ ...labelData, backgroundImage: data.imageUrl });
+      if (data.image) {
+        onLabelChange({ 
+          ...labelData, 
+          backgroundImage: data.image,
+          backgroundImageTransform: { scale: 1, offsetX: 0, offsetY: 0 }
+        });
         toast.success('AI Background generated!');
       }
     } catch (error) {
