@@ -1,8 +1,10 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Image, Sparkles } from 'lucide-react';
+import { Download, Image, Sparkles, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { FontSelector } from './FontSelector';
+import { ColorPicker } from './ColorPicker';
 
 interface LabelData {
   coffeeName: string;
@@ -10,6 +12,12 @@ interface LabelData {
   backgroundImage?: string;
   coffeeNamePosition?: { x: number; y: number };
   tastingNotesPosition?: { x: number; y: number };
+  coffeeNameFont?: string;
+  coffeeNameColor?: string;
+  tastingNotesFont?: string;
+  tastingNotesColor?: string;
+  footerFont?: string;
+  footerColor?: string;
 }
 
 interface ProductInfo {
@@ -44,6 +52,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragElement, setDragElement] = useState<'coffeeName' | 'tastingNotes' | null>(null);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+  const [showStylingPanel, setShowStylingPanel] = useState(false);
 
   // Default positions for text elements
   const coffeeNamePosition = labelData.coffeeNamePosition || { x: 192, y: 80 };
@@ -91,22 +100,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
     // Coffee name
     ctx.save();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = labelData.coffeeNameColor || '#ffffff';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.textAlign = 'center';
-    ctx.font = 'bold 32px serif';
+    ctx.font = `bold 32px ${labelData.coffeeNameFont || 'serif'}`;
     ctx.strokeText(labelData.coffeeName || 'Click to edit name', coffeeNamePosition.x, coffeeNamePosition.y);
     ctx.fillText(labelData.coffeeName || 'Click to edit name', coffeeNamePosition.x, coffeeNamePosition.y);
     ctx.restore();
 
     // Tasting notes
     ctx.save();
-    ctx.fillStyle = '#ffffff';
+    ctx.fillStyle = labelData.tastingNotesColor || '#ffffff';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
     ctx.textAlign = 'center';
-    ctx.font = '16px serif';
+    ctx.font = `16px ${labelData.tastingNotesFont || 'serif'}`;
     
     const notes = labelData.tastingNotes || 'Click to edit tasting notes';
     const words = notes.split(' ');
@@ -134,23 +143,23 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.restore();
 
     // Product info
-    ctx.fillStyle = '#000000';
+    ctx.fillStyle = labelData.footerColor || '#000000';
     ctx.textAlign = 'center';
     const productInfoY = canvas.height - 156;
     const today = new Date();
     const roastDate = today.toLocaleDateString();
     
-    ctx.font = '12px serif';
+    ctx.font = `12px ${labelData.footerFont || 'serif'}`;
     ctx.fillText(`${displayProductInfo.weight} • ${displayProductInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'}`, canvas.width / 2, productInfoY);
     ctx.fillText(`${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, canvas.width / 2, productInfoY + 15);
     ctx.fillText(`Roast Date: ${roastDate}`, canvas.width / 2, productInfoY + 30);
 
-    ctx.font = 'bold 14px serif';
+    ctx.font = `bold 14px ${labelData.footerFont || 'serif'}`;
     ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', canvas.width / 2, canvas.height - 60);
-    ctx.font = '12px serif';
+    ctx.font = `12px ${labelData.footerFont || 'serif'}`;
     ctx.fillText('Libertyville IL', canvas.width / 2, canvas.height - 45);
     ctx.fillText('www.javamania.com', canvas.width / 2, canvas.height - 30);
-    ctx.font = '10px serif';
+    ctx.font = `10px ${labelData.footerFont || 'serif'}`;
     ctx.fillText('100% Arabica Coffee & Natural Flavors', canvas.width / 2, canvas.height - 15);
   };
 
@@ -324,7 +333,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-warmth flex items-center justify-center p-4">
-      <div className="w-full max-w-2xl space-y-6">
+      <div className="w-full max-w-7xl flex gap-6 items-start">
+        {/* Main Label Designer */}
+        <div className="flex-1 max-w-2xl space-y-6">
         <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold text-foreground">Coffee Label Designer</h1>
           <p className="text-muted-foreground">Click on text to edit • Drag to reposition</p>
@@ -402,6 +413,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             )}
             AI Background
           </Button>
+
+          <Button
+            onClick={() => setShowStylingPanel(!showStylingPanel)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            Text Styling
+          </Button>
           
           <Button
             onClick={downloadPreview}
@@ -420,6 +440,59 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           onChange={handleImageUpload}
           className="hidden"
         />
+        </div>
+
+        {/* Styling Panel */}
+        {showStylingPanel && (
+          <div className="w-80 bg-card rounded-lg shadow-warm p-6 space-y-6 border border-border">
+            <h3 className="text-lg font-semibold text-foreground">Text Styling</h3>
+            
+            {/* Coffee Name Styling */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-foreground">Coffee Name</h4>
+              <FontSelector
+                value={labelData.coffeeNameFont || 'serif'}
+                onChange={(font) => onLabelChange({ ...labelData, coffeeNameFont: font })}
+                label="Font"
+              />
+              <ColorPicker
+                value={labelData.coffeeNameColor || '#ffffff'}
+                onChange={(color) => onLabelChange({ ...labelData, coffeeNameColor: color })}
+                label="Color"
+              />
+            </div>
+
+            {/* Tasting Notes Styling */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-foreground">Tasting Notes</h4>
+              <FontSelector
+                value={labelData.tastingNotesFont || 'serif'}
+                onChange={(font) => onLabelChange({ ...labelData, tastingNotesFont: font })}
+                label="Font"
+              />
+              <ColorPicker
+                value={labelData.tastingNotesColor || '#ffffff'}
+                onChange={(color) => onLabelChange({ ...labelData, tastingNotesColor: color })}
+                label="Color"
+              />
+            </div>
+
+            {/* Footer Styling */}
+            <div className="space-y-4">
+              <h4 className="font-medium text-foreground">Footer Info</h4>
+              <FontSelector
+                value={labelData.footerFont || 'serif'}
+                onChange={(font) => onLabelChange({ ...labelData, footerFont: font })}
+                label="Font"
+              />
+              <ColorPicker
+                value={labelData.footerColor || '#000000'}
+                onChange={(color) => onLabelChange({ ...labelData, footerColor: color })}
+                label="Color"
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
