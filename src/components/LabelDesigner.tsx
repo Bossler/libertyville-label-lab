@@ -492,12 +492,26 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   // AI image generation
   const generateAIImage = async () => {
-    const prompt = `Coffee label background for ${labelData.coffeeName || 'custom coffee'}, elegant and warm, coffee beans, vintage style`;
+    // Show prompt dialog to get user's description
+    const userDescription = prompt(
+      "Describe what you'd like to see in your coffee label background:",
+      "elegant coffee beans with warm lighting"
+    );
+    
+    // If user cancels, don't proceed
+    if (!userDescription) return;
+    
+    // Combine user prompt with our guidelines
+    const fullPrompt = `Coffee label background for ${labelData.coffeeName || 'custom coffee'}: ${userDescription}. IMPORTANT: This image must contain absolutely NO TEXT, NO LETTERS, NO WORDS, NO TYPOGRAPHY of any kind. Pure visual imagery only for a coffee label background.`;
     
     setIsGeneratingImage(true);
+    toast.loading("Something's brewing! Generating your AI background...", {
+      id: 'ai-generation'
+    });
+    
     try {
       const { data, error } = await supabase.functions.invoke('ai-image-generator', {
-        body: { prompt, style: 'vintage coffee aesthetic' }
+        body: { prompt: fullPrompt, style: 'vintage coffee aesthetic' }
       });
 
       if (error) throw new Error(error.message);
@@ -508,11 +522,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           backgroundImage: data.image,
           backgroundImageTransform: { scale: 1, offsetX: 0, offsetY: 0 }
         });
-        toast.success('AI Background generated!');
+        toast.success('AI Background generated!', { id: 'ai-generation' });
       }
     } catch (error) {
       console.error('AI Image generation error:', error);
-      toast.error('Failed to generate AI background');
+      toast.error('Failed to generate AI background', { id: 'ai-generation' });
     }
     setIsGeneratingImage(false);
   };
