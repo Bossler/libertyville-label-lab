@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Image, Sparkles, Settings } from 'lucide-react';
+import { Download, Image, Sparkles, Settings, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { FontSelector } from './FontSelector';
 import { ColorPicker } from './ColorPicker';
+import { ImageTransformModal } from './ImageTransformModal';
 
 interface LabelData {
   coffeeName: string;
@@ -18,6 +19,11 @@ interface LabelData {
   tastingNotesColor?: string;
   footerFont?: string;
   footerColor?: string;
+  backgroundImageTransform?: {
+    scale: number;
+    offsetX: number;
+    offsetY: number;
+  };
 }
 
 interface ProductInfo {
@@ -53,6 +59,12 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [dragElement, setDragElement] = useState<'coffeeName' | 'tastingNotes' | null>(null);
   const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
   const [showStylingPanel, setShowStylingPanel] = useState(false);
+  const [showImageTransform, setShowImageTransform] = useState(false);
+  const [tempTransform, setTempTransform] = useState({
+    scale: 1,
+    offsetX: 0,
+    offsetY: 0
+  });
 
   // Default positions for text elements
   const coffeeNamePosition = labelData.coffeeNamePosition || { x: 192, y: 80 };
@@ -73,7 +85,30 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     if (labelData.backgroundImage) {
       const img = new window.Image();
       img.onload = () => {
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const transform = labelData.backgroundImageTransform || { scale: 1, offsetX: 0, offsetY: 0 };
+        
+        // Save context for transformation
+        ctx.save();
+        
+        // Apply clipping to canvas bounds
+        ctx.rect(0, 0, canvas.width, canvas.height);
+        ctx.clip();
+        
+        // Calculate scaled dimensions
+        const scaledWidth = img.width * transform.scale;
+        const scaledHeight = img.height * transform.scale;
+        
+        // Draw the transformed image
+        ctx.drawImage(
+          img,
+          transform.offsetX,
+          transform.offsetY,
+          scaledWidth,
+          scaledHeight
+        );
+        
+        ctx.restore();
+        
         drawTextElements(ctx, canvas);
         if (previewMode) drawWatermark(ctx, canvas);
       };
@@ -281,11 +316,31 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       reader.onload = (e) => {
         onLabelChange({
           ...labelData,
-          backgroundImage: e.target?.result as string
+          backgroundImage: e.target?.result as string,
+          backgroundImageTransform: { scale: 1, offsetX: 0, offsetY: 0 }
         });
+        // Auto-open transform modal for new uploads
+        setTempTransform({ scale: 1, offsetX: 0, offsetY: 0 });
+        setShowImageTransform(true);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  // Image transform handlers
+  const handleOpenImageTransform = () => {
+    if (labelData.backgroundImage) {
+      setTempTransform(labelData.backgroundImageTransform || { scale: 1, offsetX: 0, offsetY: 0 });
+      setShowImageTransform(true);
+    }
+  };
+
+  const handleApplyTransform = () => {
+    onLabelChange({
+      ...labelData,
+      backgroundImageTransform: tempTransform
+    });
+    setShowImageTransform(false);
   };
 
   // Download function
@@ -399,6 +454,17 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             <Image className="w-4 h-4" />
             Upload Background
           </Button>
+
+          {labelData.backgroundImage && (
+            <Button
+              onClick={handleOpenImageTransform}
+              variant="outline"
+              className="flex items-center gap-2"
+            >
+              <Edit className="w-4 h-4" />
+              Edit Background
+            </Button>
+          )}
           
           <Button
             onClick={generateAIImage}
@@ -441,6 +507,18 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           className="hidden"
         />
         </div>
+
+        {/* Image Transform Modal */}
+        {labelData.backgroundImage && (
+          <ImageTransformModal
+            isOpen={showImageTransform}
+            onClose={() => setShowImageTransform(false)}
+            imageUrl={labelData.backgroundImage}
+            transform={tempTransform}
+            onTransformChange={setTempTransform}
+            onApply={handleApplyTransform}
+          />
+        )}
 
         {/* Styling Panel */}
         {showStylingPanel && (
