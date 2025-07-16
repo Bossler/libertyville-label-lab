@@ -501,8 +501,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // If user cancels, don't proceed
     if (!userDescription) return;
     
-    // Combine user prompt with our guidelines
-    const fullPrompt = `Coffee label background for ${labelData.coffeeName || 'custom coffee'}: ${userDescription}. IMPORTANT: This image must contain absolutely NO TEXT, NO LETTERS, NO WORDS, NO TYPOGRAPHY of any kind. Pure visual imagery only for a coffee label background.`;
+    // Combine user prompt with our guidelines and size specification
+    const fullPrompt = `A 4 inch wide by 6 inch high coffee label background featuring: ${userDescription}. IMPORTANT: This image must contain absolutely NO TEXT, NO LETTERS, NO WORDS, NO TYPOGRAPHY of any kind. Pure visual imagery only for a coffee label background. Vintage coffee aesthetic style.`;
     
     setIsGeneratingImage(true);
     toast.loading("Something's brewing! Generating your AI background...", {
@@ -517,10 +517,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       if (error) throw new Error(error.message);
 
       if (data.image) {
+        // Set image with transform to fill the preview
         onLabelChange({ 
           ...labelData, 
           backgroundImage: data.image,
-          backgroundImageTransform: { scale: 1, offsetX: 0, offsetY: 0 }
+          backgroundImageTransform: { 
+            scale: 1.2, // Scale up slightly to ensure full coverage
+            offsetX: 0, 
+            offsetY: 0 
+          }
         });
         toast.success('AI Background generated!', { id: 'ai-generation' });
       }
