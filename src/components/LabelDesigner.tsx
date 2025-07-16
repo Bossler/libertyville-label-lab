@@ -201,7 +201,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       type: 'regular' as const
     };
 
-    // Coffee name with dynamic scaling
+    // Coffee name with dynamic scaling and line wrapping
     ctx.save();
     ctx.fillStyle = labelData.coffeeNameColor || '#ffffff';
     ctx.strokeStyle = '#000000';
@@ -209,7 +209,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.textAlign = 'center';
     
     const coffeeName = labelData.coffeeName || 'Click to edit name';
-    const coffeeNameFontSize = calculateOptimalFontSize(
+    
+    // Try single line first with scaling
+    const singleLineFontSize = calculateOptimalFontSize(
       ctx,
       coffeeName,
       320, // max width
@@ -219,9 +221,49 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       'bold'
     );
     
-    ctx.font = `bold ${coffeeNameFontSize}px ${labelData.coffeeNameFont || 'serif'}`;
-    ctx.strokeText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
-    ctx.fillText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
+    // If even at minimum font size it doesn't fit, use multi-line
+    ctx.font = `bold ${singleLineFontSize}px ${labelData.coffeeNameFont || 'serif'}`;
+    const singleLineWidth = ctx.measureText(coffeeName).width;
+    
+    if (singleLineWidth <= 320) {
+      // Single line fits
+      ctx.strokeText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
+      ctx.fillText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
+    } else {
+      // Use multi-line with optimal sizing
+      const { fontSize: multiLineFontSize, lineHeight } = calculateOptimalMultiLineFontSize(
+        ctx,
+        coffeeName,
+        320, // max width
+        80,  // max height for coffee name
+        32,  // max font size for multi-line
+        16,  // min font size
+        labelData.coffeeNameFont || 'serif'
+      );
+      
+      ctx.font = `bold ${multiLineFontSize}px ${labelData.coffeeNameFont || 'serif'}`;
+      
+      const words = coffeeName.split(' ');
+      const maxWidth = 320;
+      let line = '';
+      let y = coffeeNamePosition.y - (lineHeight / 2); // Center multi-line text
+      
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        
+        if (metrics.width > maxWidth && n > 0) {
+          ctx.strokeText(line.trim(), coffeeNamePosition.x, y);
+          ctx.fillText(line.trim(), coffeeNamePosition.x, y);
+          line = words[n] + ' ';
+          y += lineHeight;
+        } else {
+          line = testLine;
+        }
+      }
+      ctx.strokeText(line.trim(), coffeeNamePosition.x, y);
+      ctx.fillText(line.trim(), coffeeNamePosition.x, y);
+    }
     ctx.restore();
 
     // Tasting notes with dynamic scaling
