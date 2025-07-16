@@ -126,6 +126,74 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }
   }, [labelData, previewMode, coffeeNamePosition, tastingNotesPosition]);
 
+  // Helper function to calculate optimal font size for single line text
+  const calculateOptimalFontSize = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+    maxFontSize: number,
+    minFontSize: number,
+    fontFamily: string,
+    fontWeight: string = 'normal'
+  ): number => {
+    let fontSize = maxFontSize;
+    
+    while (fontSize >= minFontSize) {
+      ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+      const metrics = ctx.measureText(text);
+      
+      if (metrics.width <= maxWidth) {
+        return fontSize;
+      }
+      fontSize -= 1;
+    }
+    
+    return minFontSize;
+  };
+
+  // Helper function to calculate optimal font size for multi-line text
+  const calculateOptimalMultiLineFontSize = (
+    ctx: CanvasRenderingContext2D,
+    text: string,
+    maxWidth: number,
+    maxHeight: number,
+    maxFontSize: number,
+    minFontSize: number,
+    fontFamily: string
+  ): { fontSize: number; lineHeight: number } => {
+    let fontSize = maxFontSize;
+    
+    while (fontSize >= minFontSize) {
+      const lineHeight = fontSize * 1.2; // 20% line spacing
+      ctx.font = `${fontSize}px ${fontFamily}`;
+      
+      const words = text.split(' ');
+      let lines = 1;
+      let line = '';
+      
+      for (let n = 0; n < words.length; n++) {
+        const testLine = line + words[n] + ' ';
+        const metrics = ctx.measureText(testLine);
+        
+        if (metrics.width > maxWidth && n > 0) {
+          lines++;
+          line = words[n] + ' ';
+        } else {
+          line = testLine;
+        }
+      }
+      
+      const totalHeight = lines * lineHeight;
+      
+      if (totalHeight <= maxHeight) {
+        return { fontSize, lineHeight };
+      }
+      fontSize -= 1;
+    }
+    
+    return { fontSize: minFontSize, lineHeight: minFontSize * 1.2 };
+  };
+
   const drawTextElements = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => {
     const displayProductInfo = productInfo || {
       weight: '12 oz',
@@ -133,28 +201,50 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       type: 'regular' as const
     };
 
-    // Coffee name
+    // Coffee name with dynamic scaling
     ctx.save();
     ctx.fillStyle = labelData.coffeeNameColor || '#ffffff';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.textAlign = 'center';
-    ctx.font = `bold 32px ${labelData.coffeeNameFont || 'serif'}`;
-    ctx.strokeText(labelData.coffeeName || 'Click to edit name', coffeeNamePosition.x, coffeeNamePosition.y);
-    ctx.fillText(labelData.coffeeName || 'Click to edit name', coffeeNamePosition.x, coffeeNamePosition.y);
+    
+    const coffeeName = labelData.coffeeName || 'Click to edit name';
+    const coffeeNameFontSize = calculateOptimalFontSize(
+      ctx,
+      coffeeName,
+      320, // max width
+      42,  // max font size
+      18,  // min font size
+      labelData.coffeeNameFont || 'serif',
+      'bold'
+    );
+    
+    ctx.font = `bold ${coffeeNameFontSize}px ${labelData.coffeeNameFont || 'serif'}`;
+    ctx.strokeText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
+    ctx.fillText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
     ctx.restore();
 
-    // Tasting notes
+    // Tasting notes with dynamic scaling
     ctx.save();
     ctx.fillStyle = labelData.tastingNotesColor || '#ffffff';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 1;
     ctx.textAlign = 'center';
-    ctx.font = `16px ${labelData.tastingNotesFont || 'serif'}`;
     
     const notes = labelData.tastingNotes || 'Click to edit tasting notes';
+    const { fontSize: notesFontSize, lineHeight } = calculateOptimalMultiLineFontSize(
+      ctx,
+      notes,
+      280, // max width
+      120, // max height
+      20,  // max font size
+      12,  // min font size
+      labelData.tastingNotesFont || 'serif'
+    );
+    
+    ctx.font = `${notesFontSize}px ${labelData.tastingNotesFont || 'serif'}`;
+    
     const words = notes.split(' ');
-    const lineHeight = 20;
     const maxWidth = 280;
     let line = '';
     let y = tastingNotesPosition.y;
