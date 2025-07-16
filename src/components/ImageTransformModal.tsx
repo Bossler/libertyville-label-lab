@@ -40,27 +40,47 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
 
     const img = new Image();
     img.onload = () => {
-      const { scale, offsetX, offsetY } = transform;
-      
-      // Calculate scaled dimensions
-      const scaledWidth = img.width * scale;
-      const scaledHeight = img.height * scale;
-      
-      // Draw the transformed image
-      ctx.drawImage(
-        img,
-        offsetX,
-        offsetY,
-        scaledWidth,
-        scaledHeight
-      );
-      
-      // Draw border to show label boundaries
-      ctx.strokeStyle = '#ff0000';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-      ctx.setLineDash([]);
+      try {
+        const { scale, offsetX, offsetY } = transform;
+        
+        // Calculate fit-to-canvas scale (same logic as main preview)
+        const fitToCanvasScale = Math.min(
+          canvas.width / img.width,
+          canvas.height / img.height
+        );
+        
+        // Apply user transform scale on top of fit-to-canvas scale
+        const finalScale = fitToCanvasScale * scale;
+        
+        // Calculate final dimensions
+        const scaledWidth = img.width * finalScale;
+        const scaledHeight = img.height * finalScale;
+        
+        // Center the image by default, then apply user offsets
+        const centeredX = (canvas.width - scaledWidth) / 2;
+        const centeredY = (canvas.height - scaledHeight) / 2;
+        
+        // Draw the transformed image
+        ctx.drawImage(
+          img,
+          centeredX + offsetX,
+          centeredY + offsetY,
+          scaledWidth,
+          scaledHeight
+        );
+        
+        // Draw border to show label boundaries
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+        ctx.strokeRect(0, 0, canvas.width, canvas.height);
+        ctx.setLineDash([]);
+      } catch (error) {
+        console.error('Error drawing preview:', error);
+      }
+    };
+    img.onerror = () => {
+      console.error('Failed to load image:', imageUrl);
     };
     img.src = imageUrl;
   };
@@ -139,10 +159,10 @@ export const ImageTransformModal: React.FC<ImageTransformModalProps> = ({
             <div className="border-2 border-muted rounded-lg p-1 bg-muted/20 w-fit">
               <canvas
                 ref={previewRef}
-                width={384}
-                height={512}
-                className="border border-border rounded cursor-move max-w-[min(50vw,240px)] max-h-[min(50vh,320px)] w-auto h-auto"
-                style={{ aspectRatio: '384/512' }}
+                width={288}
+                height={384}
+                className="border border-border rounded cursor-move w-[288px] h-[384px]"
+                style={{ aspectRatio: '288/384' }}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
