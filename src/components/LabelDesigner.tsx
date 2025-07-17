@@ -303,16 +303,92 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 overflow: 'hidden'
               }}
             >
-              {/* Background image editor - LAYER 1 (BOTTOM) */}
+              {/* Image drag/resize handles only - no image display */}
               {labelData.backgroundImage && (
-                <SimpleImageEditor
-                  imageElement={labelData.backgroundImage}
-                  canvasWidth={CANVAS_WIDTH}
-                  canvasHeight={CANVAS_HEIGHT}
-                  onImageChange={(updatedImage) => {
-                    onLabelChange({ ...labelData, backgroundImage: updatedImage });
+                <div
+                  className="absolute border-2 border-blue-500 cursor-move bg-transparent"
+                  style={{
+                    left: labelData.backgroundImage.x,
+                    top: labelData.backgroundImage.y,
+                    width: labelData.backgroundImage.width,
+                    height: labelData.backgroundImage.height,
+                    transform: `rotate(${labelData.backgroundImage.rotation}deg)`,
+                    zIndex: 1
                   }}
-                />
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const startX = e.clientX;
+                    const startY = e.clientY;
+                    const startImageX = labelData.backgroundImage!.x;
+                    const startImageY = labelData.backgroundImage!.y;
+                    
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                      const deltaX = moveEvent.clientX - startX;
+                      const deltaY = moveEvent.clientY - startY;
+                      
+                      const newX = Math.max(0, Math.min(CANVAS_WIDTH - labelData.backgroundImage!.width, startImageX + deltaX));
+                      const newY = Math.max(0, Math.min(CANVAS_HEIGHT - labelData.backgroundImage!.height, startImageY + deltaY));
+                      
+                      onLabelChange({
+                        ...labelData,
+                        backgroundImage: {
+                          ...labelData.backgroundImage!,
+                          x: newX,
+                          y: newY
+                        }
+                      });
+                    };
+                    
+                    const handleMouseUp = () => {
+                      document.removeEventListener('mousemove', handleMouseMove);
+                      document.removeEventListener('mouseup', handleMouseUp);
+                    };
+                    
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                  }}
+                >
+                  {/* Resize handle */}
+                  <div
+                    className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      
+                      const startX = e.clientX;
+                      const startY = e.clientY;
+                      const startWidth = labelData.backgroundImage!.width;
+                      const startHeight = labelData.backgroundImage!.height;
+                      
+                      const handleMouseMove = (moveEvent: MouseEvent) => {
+                        const deltaX = moveEvent.clientX - startX;
+                        const deltaY = moveEvent.clientY - startY;
+                        
+                        const newWidth = Math.max(20, Math.min(CANVAS_WIDTH - labelData.backgroundImage!.x, startWidth + deltaX));
+                        const newHeight = Math.max(20, Math.min(CANVAS_HEIGHT - labelData.backgroundImage!.y, startHeight + deltaY));
+                        
+                        onLabelChange({
+                          ...labelData,
+                          backgroundImage: {
+                            ...labelData.backgroundImage!,
+                            width: newWidth,
+                            height: newHeight
+                          }
+                        });
+                      };
+                      
+                      const handleMouseUp = () => {
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                      };
+                      
+                      document.addEventListener('mousemove', handleMouseMove);
+                      document.addEventListener('mouseup', handleMouseUp);
+                    }}
+                  />
+                </div>
               )}
               
               {/* Text boxes - LAYER 10 (TOP) */}
