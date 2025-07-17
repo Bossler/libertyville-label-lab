@@ -40,11 +40,43 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas (no background - let the uploaded image be the background)
+    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    drawTextElements(ctx);
-    if (previewMode) drawWatermark(ctx);
+    // Set white background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw background image first (bottom layer)
+    if (labelData.backgroundImage) {
+      const img = new window.Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        ctx.save();
+        ctx.translate(
+          labelData.backgroundImage!.x + labelData.backgroundImage!.width / 2,
+          labelData.backgroundImage!.y + labelData.backgroundImage!.height / 2
+        );
+        ctx.rotate((labelData.backgroundImage!.rotation * Math.PI) / 180);
+        ctx.drawImage(
+          img,
+          -labelData.backgroundImage!.width / 2,
+          -labelData.backgroundImage!.height / 2,
+          labelData.backgroundImage!.width,
+          labelData.backgroundImage!.height
+        );
+        ctx.restore();
+        
+        // Draw text elements on top of image
+        drawTextElements(ctx);
+        if (previewMode) drawWatermark(ctx);
+      };
+      img.src = labelData.backgroundImage.url;
+    } else {
+      // No background image, just draw text
+      drawTextElements(ctx);
+      if (previewMode) drawWatermark(ctx);
+    }
   }, [labelData, previewMode]);
 
   const drawTextElements = (ctx: CanvasRenderingContext2D) => {
