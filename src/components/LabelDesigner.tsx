@@ -53,20 +53,14 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       const img = new window.Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        ctx.save();
-        ctx.translate(
-          labelData.backgroundImage!.x + labelData.backgroundImage!.width / 2,
-          labelData.backgroundImage!.y + labelData.backgroundImage!.height / 2
-        );
-        ctx.rotate((labelData.backgroundImage!.rotation * Math.PI) / 180);
+        const bgImg = labelData.backgroundImage!;
+        
+        // Use the crop parameters from ImageAdjustModal
         ctx.drawImage(
           img,
-          -labelData.backgroundImage!.width / 2,
-          -labelData.backgroundImage!.height / 2,
-          labelData.backgroundImage!.width,
-          labelData.backgroundImage!.height
+          bgImg.x, bgImg.y, bgImg.width, bgImg.height, // Source crop rectangle
+          0, 0, CANVAS_WIDTH, CANVAS_HEIGHT // Draw to fill entire canvas
         );
-        ctx.restore();
         
         // Draw text elements on top of image
         drawTextElements(ctx);
