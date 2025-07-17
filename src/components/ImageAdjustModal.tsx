@@ -39,20 +39,28 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
       const originalHeight = img.height;
       setOriginalSize({ width: originalWidth, height: originalHeight });
       
-      // Calculate scale to fit the image in the frame
+      // Calculate scale to cover the frame (for cropping)
       const containerAspect = canvasWidth / canvasHeight;
       const imgAspect = originalWidth / originalHeight;
       
       let width, height;
       if (imgAspect > containerAspect) {
-        // Image is wider than container (relative to aspect ratio)
+        // Image is wider than container - scale by height to cover
         height = canvasHeight;
         width = height * imgAspect;
       } else {
-        // Image is taller than container (relative to aspect ratio)
+        // Image is taller than container - scale by width to cover  
         width = canvasWidth;
         height = width / imgAspect;
       }
+      
+      // Ensure image covers the entire frame (minimum size)
+      const scaleX = canvasWidth / width;
+      const scaleY = canvasHeight / height;
+      const scale = Math.max(scaleX, scaleY);
+      
+      width = width * scale;
+      height = height * scale;
       
       setImageSize({ width, height });
       
