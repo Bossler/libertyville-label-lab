@@ -43,33 +43,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw background
-    if (labelData.backgroundImage) {
-      const img = new window.Image();
-      img.onload = () => {
-        const { x, y, width, height, rotation } = labelData.backgroundImage!;
-        
-        ctx.save();
-        ctx.translate(x + width / 2, y + height / 2);
-        ctx.rotate((rotation * Math.PI) / 180);
-        ctx.drawImage(img, -width / 2, -height / 2, width, height);
-        ctx.restore();
-        
-        drawTextElements(ctx);
-        if (previewMode) drawWatermark(ctx);
-      };
-      img.src = labelData.backgroundImage.url;
-    } else {
-      // Default gradient background
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#8B4513');
-      gradient.addColorStop(1, '#D2B48C');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      drawTextElements(ctx);
-      if (previewMode) drawWatermark(ctx);
-    }
+    // Draw default gradient background (no image on canvas)
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, '#8B4513');
+    gradient.addColorStop(1, '#D2B48C');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    drawTextElements(ctx);
+    if (previewMode) drawWatermark(ctx);
   }, [labelData, previewMode]);
 
   const drawTextElements = (ctx: CanvasRenderingContext2D) => {
