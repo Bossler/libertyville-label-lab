@@ -96,7 +96,7 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
         top: textBox.y,
         width: textBox.width,
         height: textBox.height,
-        zIndex: 10
+        zIndex: 100
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}

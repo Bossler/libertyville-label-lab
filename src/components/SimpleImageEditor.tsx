@@ -161,7 +161,7 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
       {/* Resize handle */}
       <div
         className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize"
-        style={{ zIndex: 15 }}
+        style={{ zIndex: 105 }}
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, 'resize');
