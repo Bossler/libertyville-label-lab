@@ -46,11 +46,11 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
 
       if (imgAspect > cropAspect) {
         // Image is wider than the crop frame. Fit by height.
-        displayHeight = canvasHeight * zoom;
+        displayHeight = canvasHeight;
         displayWidth = displayHeight * imgAspect;
       } else {
         // Image is taller (or equal) than the crop frame. Fit by width.
-        displayWidth = canvasWidth * zoom;
+        displayWidth = canvasWidth;
         displayHeight = displayWidth / imgAspect;
       }
 
@@ -211,25 +211,8 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
               ref={containerRef}
               className="relative border-2 border-muted overflow-hidden bg-muted/10"
               style={{
-                width: (() => {
-                  // Calculate responsive size while maintaining 2:3 aspect ratio
-                  const maxWidth = Math.min(canvasWidth, window.innerWidth - 120);
-                  const maxHeight = Math.min(canvasHeight, window.innerHeight - 300); // Leave space for controls
-                  
-                  // Determine actual size based on what fits better
-                  const containerWidth = Math.min(maxWidth, maxHeight * (2/3));
-                  return containerWidth;
-                })(),
-                height: (() => {
-                  // Calculate responsive size while maintaining 2:3 aspect ratio
-                  const maxWidth = Math.min(canvasWidth, window.innerWidth - 120);
-                  const maxHeight = Math.min(canvasHeight, window.innerHeight - 300); // Leave space for controls
-                  
-                  // Determine actual size based on what fits better
-                  const containerWidth = Math.min(maxWidth, maxHeight * (2/3));
-                  const containerHeight = containerWidth * (3/2);
-                  return containerHeight;
-                })(),
+                width: canvasWidth,
+                height: canvasHeight,
                 cursor: isDragging ? 'grabbing' : 'grab'
               }}
               onMouseDown={handleMouseDown}
