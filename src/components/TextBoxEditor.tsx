@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TextBox } from '@/types/label';
 
 interface TextBoxEditorProps {
@@ -23,22 +23,14 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(textBox.content);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    onSelect();
-    
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setIsDragging(true);
-    setDragStart({ x: x - textBox.x, y: y - textBox.y });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleGlobalMouseMove = useCallback((e: MouseEvent) => {
     if (!isDragging) return;
 
-    const rect = e.currentTarget.getBoundingClientRect();
+    // Get the overlay container to calculate relative coordinates
+    const overlay = document.querySelector('[style*="zIndex: 5"]') as HTMLElement;
+    if (!overlay) return;
+    
+    const rect = overlay.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
@@ -50,11 +42,33 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
       x: newX,
       y: newY
     });
+  }, [isDragging, dragStart, textBox, canvasWidth, canvasHeight, onTextBoxChange]);
+
+  const handleGlobalMouseUp = useCallback(() => {
+    setIsDragging(false);
+  }, []);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    onSelect();
+    
+    setIsDragging(true);
+    // Calculate offset from mouse to top-left of text box
+    setDragStart({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
+  // Global mouse event listeners
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, handleGlobalMouseMove, handleGlobalMouseUp]);
 
   const handleDoubleClick = () => {
     setIsEditing(true);
@@ -85,9 +99,6 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
         zIndex: 10
       }}
       onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       onDoubleClick={handleDoubleClick}
     >
       {isEditing ? (

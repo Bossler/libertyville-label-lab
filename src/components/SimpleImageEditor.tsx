@@ -34,20 +34,19 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent, action: 'drag' | 'resize') => {
     e.preventDefault();
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-
+    e.stopPropagation();
+    
     if (action === 'drag') {
       setIsDragging(true);
-      setDragStart({ x: x - imageElement.x, y: y - imageElement.y });
+      // Calculate offset from mouse to top-left of image
+      setDragStart({ x: e.nativeEvent.offsetX, y: e.nativeEvent.offsetY });
     } else if (action === 'resize') {
       setIsResizing(true);
-      setResizeStart({
-        x,
-        y,
-        width: imageElement.width,
-        height: imageElement.height
+      setResizeStart({ 
+        x: e.clientX, 
+        y: e.clientY, 
+        width: imageElement.width, 
+        height: imageElement.height 
       });
     }
   };
@@ -92,8 +91,8 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!isDragging && !isResizing) return;
 
-      // Get the overlay container bounds instead of individual element bounds
-      const overlay = document.querySelector('[data-overlay="true"]') as HTMLElement;
+      // Get the overlay container bounds
+      const overlay = document.querySelector('[style*="zIndex: 5"]') as HTMLElement;
       if (!overlay) return;
 
       const rect = overlay.getBoundingClientRect();
@@ -110,15 +109,15 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
           y: newY
         });
       } else if (isResizing) {
-        const deltaX = x - resizeStart.x;
-        const deltaY = y - resizeStart.y;
-        const newWidth = Math.max(50, resizeStart.width + deltaX);
-        const newHeight = Math.max(50, resizeStart.height + deltaY);
+        const deltaX = e.clientX - resizeStart.x;
+        const deltaY = e.clientY - resizeStart.y;
+        const newWidth = Math.max(20, Math.min(canvasWidth - imageElement.x, resizeStart.width + deltaX));
+        const newHeight = Math.max(20, Math.min(canvasHeight - imageElement.y, resizeStart.height + deltaY));
         
         onImageChange({
           ...imageElement,
-          width: Math.min(newWidth, canvasWidth - imageElement.x),
-          height: Math.min(newHeight, canvasHeight - imageElement.y)
+          width: newWidth,
+          height: newHeight
         });
       }
     };
@@ -151,8 +150,6 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
         zIndex: 1
       }}
       onMouseDown={(e) => handleMouseDown(e, 'drag')}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
     >
       <img
         src={imageElement.url}
