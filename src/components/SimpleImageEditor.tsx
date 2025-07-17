@@ -141,14 +141,20 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
 
   return (
     <div
-      className="absolute border-2 border-blue-500 cursor-move"
+      className="absolute border-2 border-blue-500 cursor-move image-layer"
       style={{
         left: imageElement.x,
         top: imageElement.y,
         width: imageElement.width,
         height: imageElement.height,
         transform: `rotate(${imageElement.rotation}deg)`,
-        zIndex: 5  // Lower than text boxes (which are z-20)
+        zIndex: 1,
+        position: 'relative'
+      }}
+      ref={(el) => {
+        if (el) {
+          console.log('Image element z-index:', window.getComputedStyle(el).zIndex);
+        }
       }}
       onMouseDown={(e) => handleMouseDown(e, 'drag')}
       onMouseUp={handleMouseUp}
@@ -163,8 +169,8 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
       
       {/* Resize handle */}
       <div
-        className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize"
-        style={{ zIndex: 25 }}
+        className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize resize-handle"
+        style={{ zIndex: 200, position: 'relative' }}
         onMouseDown={(e) => {
           e.stopPropagation();
           handleMouseDown(e, 'resize');

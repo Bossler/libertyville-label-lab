@@ -26,7 +26,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const overlayRef = useRef<HTMLDivElement>(null);
   
   const [previewMode, setPreviewMode] = useState(false);
-  const [selectedTextBox, setSelectedTextBox] = useState<string | null>(null);
+  const [selectedTextBoxIndex, setSelectedTextBoxIndex] = useState<number | null>(null);
   const [showStylingPanel, setShowStylingPanel] = useState(false);
 
   const CANVAS_WIDTH = 384;
@@ -172,16 +172,16 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       ...labelData,
       textBoxes: [...labelData.textBoxes, newTextBox]
     });
-    setSelectedTextBox(newTextBox.id);
+    setSelectedTextBoxIndex(labelData.textBoxes.length);
   };
 
   const deleteSelectedTextBox = () => {
-    if (selectedTextBox) {
+    if (selectedTextBoxIndex !== null) {
       onLabelChange({
         ...labelData,
-        textBoxes: labelData.textBoxes.filter(tb => tb.id !== selectedTextBox)
+        textBoxes: labelData.textBoxes.filter((_, index) => index !== selectedTextBoxIndex)
       });
-      setSelectedTextBox(null);
+      setSelectedTextBoxIndex(null);
     }
   };
 
@@ -209,8 +209,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   };
 
   const updateSelectedTextBoxFont = (font: string) => {
-    if (selectedTextBox) {
-      const textBox = labelData.textBoxes.find(tb => tb.id === selectedTextBox);
+    if (selectedTextBoxIndex !== null) {
+      const textBox = labelData.textBoxes[selectedTextBoxIndex];
       if (textBox) {
         updateTextBox({ ...textBox, fontFamily: font });
       }
@@ -218,8 +218,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   };
 
   const updateSelectedTextBoxColor = (color: string) => {
-    if (selectedTextBox) {
-      const textBox = labelData.textBoxes.find(tb => tb.id === selectedTextBox);
+    if (selectedTextBoxIndex !== null) {
+      const textBox = labelData.textBoxes[selectedTextBoxIndex];
       if (textBox) {
         updateTextBox({ ...textBox, color });
       }
@@ -245,8 +245,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     drawCanvas();
   }, [drawCanvas]);
 
-  const selectedTextBoxData = selectedTextBox 
-    ? labelData.textBoxes.find(tb => tb.id === selectedTextBox) 
+  const selectedTextBoxData = selectedTextBoxIndex !== null 
+    ? labelData.textBoxes[selectedTextBoxIndex] 
     : null;
 
   return (
@@ -271,32 +271,40 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             <div
               data-overlay="true"
               className="absolute top-0 left-1/2 transform -translate-x-1/2 pointer-events-auto"
-              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
+              style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT, position: 'relative' }}
             >
-              {/* Background image editor */}
+              {/* Background image editor - LAYER 1 (BOTTOM) */}
               {labelData.backgroundImage && (
-                <SimpleImageEditor
-                  imageElement={labelData.backgroundImage}
-                  canvasWidth={CANVAS_WIDTH}
-                  canvasHeight={CANVAS_HEIGHT}
-                  onImageChange={(updatedImage) => 
-                    onLabelChange({ ...labelData, backgroundImage: updatedImage })
-                  }
-                />
+                <div style={{ position: 'absolute', zIndex: 1, top: 0, left: 0 }}>
+                  <SimpleImageEditor
+                    imageElement={labelData.backgroundImage}
+                    canvasWidth={CANVAS_WIDTH}
+                    canvasHeight={CANVAS_HEIGHT}
+                    onImageChange={(updatedImage) => {
+                      console.log('Image updated - should be BEHIND text');
+                      onLabelChange({ ...labelData, backgroundImage: updatedImage });
+                    }}
+                  />
+                </div>
               )}
-
-              {/* Text box editors */}
-              {labelData.textBoxes.map(textBox => (
-                <TextBoxEditor
-                  key={textBox.id}
-                  textBox={textBox}
-                  canvasWidth={CANVAS_WIDTH}
-                  canvasHeight={CANVAS_HEIGHT}
-                  isSelected={selectedTextBox === textBox.id}
-                  onTextBoxChange={updateTextBox}
-                  onSelect={() => setSelectedTextBox(textBox.id)}
-                />
-              ))}
+              
+              {/* Text boxes - LAYER 100 (TOP) */}
+              <div style={{ position: 'absolute', zIndex: 100, top: 0, left: 0, width: '100%', height: '100%' }}>
+                {labelData.textBoxes.map((textBox, index) => (
+                  <TextBoxEditor
+                    key={index}
+                    textBox={textBox}
+                    canvasWidth={CANVAS_WIDTH}
+                    canvasHeight={CANVAS_HEIGHT}
+                    isSelected={selectedTextBoxIndex === index}
+                    onTextBoxChange={(updatedTextBox) => {
+                      console.log('Text updated - should be ABOVE image');
+                      updateTextBox(updatedTextBox);
+                    }}
+                    onSelect={() => setSelectedTextBoxIndex(index)}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>

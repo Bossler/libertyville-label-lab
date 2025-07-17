@@ -76,13 +76,19 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
 
   return (
     <div
-      className={`absolute cursor-move ${isSelected ? 'border-2 border-blue-500' : 'border border-transparent'}`}
+      className={`absolute cursor-move text-layer ${isSelected ? 'border-2 border-blue-500' : 'border border-transparent'}`}
       style={{
         left: textBox.x,
         top: textBox.y,
         width: textBox.width,
         height: textBox.height,
-        zIndex: 10  // Higher than images (which are zIndex: 5)
+        zIndex: 100,
+        position: 'relative'
+      }}
+      ref={(el) => {
+        if (el) {
+          console.log('Text element z-index:', window.getComputedStyle(el).zIndex);
+        }
       }}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
