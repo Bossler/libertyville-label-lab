@@ -287,7 +287,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             
             {/* Interactive overlay for text boxes and image */}
             <div
-              ref={overlayRef}
+              data-overlay="true"
               className="absolute top-0 left-1/2 transform -translate-x-1/2 pointer-events-auto"
               style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}
             >

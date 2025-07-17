@@ -76,7 +76,7 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
 
   return (
     <div
-      className={`absolute cursor-move ${isSelected ? 'border-2 border-blue-500' : 'border border-transparent'}`}
+      className={`absolute cursor-move z-20 ${isSelected ? 'border-2 border-blue-500' : 'border border-transparent'}`}
       style={{
         left: textBox.x,
         top: textBox.y,

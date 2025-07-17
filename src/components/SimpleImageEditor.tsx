@@ -87,9 +87,61 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
     setIsResizing(false);
   };
 
+  // Add global mouse move and mouse up listeners for smoother dragging
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isDragging && !isResizing) return;
+
+      // Get the overlay container bounds instead of individual element bounds
+      const overlay = document.querySelector('[data-overlay="true"]') as HTMLElement;
+      if (!overlay) return;
+
+      const rect = overlay.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      if (isDragging) {
+        const newX = Math.max(0, Math.min(canvasWidth - imageElement.width, x - dragStart.x));
+        const newY = Math.max(0, Math.min(canvasHeight - imageElement.height, y - dragStart.y));
+        
+        onImageChange({
+          ...imageElement,
+          x: newX,
+          y: newY
+        });
+      } else if (isResizing) {
+        const deltaX = x - resizeStart.x;
+        const deltaY = y - resizeStart.y;
+        const newWidth = Math.max(50, resizeStart.width + deltaX);
+        const newHeight = Math.max(50, resizeStart.height + deltaY);
+        
+        onImageChange({
+          ...imageElement,
+          width: Math.min(newWidth, canvasWidth - imageElement.x),
+          height: Math.min(newHeight, canvasHeight - imageElement.y)
+        });
+      }
+    };
+
+    const handleGlobalMouseUp = () => {
+      setIsDragging(false);
+      setIsResizing(false);
+    };
+
+    if (isDragging || isResizing) {
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+    };
+  }, [isDragging, isResizing, dragStart, resizeStart, imageElement, canvasWidth, canvasHeight, onImageChange]);
+
   return (
     <div
-      className="absolute border-2 border-blue-500 cursor-move"
+      className="absolute border-2 border-blue-500 cursor-move z-10"
       style={{
         left: imageElement.x,
         top: imageElement.y,
@@ -98,7 +150,6 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
         transform: `rotate(${imageElement.rotation}deg)`
       }}
       onMouseDown={(e) => handleMouseDown(e, 'drag')}
-      onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
     >
@@ -111,8 +162,11 @@ export const SimpleImageEditor: React.FC<SimpleImageEditorProps> = ({
       
       {/* Resize handle */}
       <div
-        className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize"
-        onMouseDown={(e) => handleMouseDown(e, 'resize')}
+        className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 cursor-se-resize z-20"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          handleMouseDown(e, 'resize');
+        }}
       />
     </div>
   );
