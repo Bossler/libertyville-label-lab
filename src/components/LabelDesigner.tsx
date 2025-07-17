@@ -169,7 +169,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               y: (CANVAS_HEIGHT - height) / 2,
               width,
               height,
-              rotation: 0
+              rotation: 0,
+              originalWidth: img.width,
+              originalHeight: img.height
             }
           });
         };
@@ -361,13 +363,23 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       const startY = e.clientY;
                       const startWidth = labelData.backgroundImage!.width;
                       const startHeight = labelData.backgroundImage!.height;
+                      const aspectRatio = labelData.backgroundImage!.originalWidth / labelData.backgroundImage!.originalHeight;
                       
                       const handleMouseMove = (moveEvent: MouseEvent) => {
                         const deltaX = moveEvent.clientX - startX;
-                        const deltaY = moveEvent.clientY - startY;
                         
-                        const newWidth = Math.max(20, Math.min(CANVAS_WIDTH - labelData.backgroundImage!.x, startWidth + deltaX));
-                        const newHeight = Math.max(20, Math.min(CANVAS_HEIGHT - labelData.backgroundImage!.y, startHeight + deltaY));
+                        // Calculate new width based on drag distance
+                        let newWidth = Math.max(20, Math.min(CANVAS_WIDTH - labelData.backgroundImage!.x, startWidth + deltaX));
+                        
+                        // Maintain aspect ratio by calculating height from width
+                        let newHeight = newWidth / aspectRatio;
+                        
+                        // Check if calculated height is within canvas bounds
+                        if (labelData.backgroundImage!.y + newHeight > CANVAS_HEIGHT) {
+                          // If height exceeds canvas, recalculate based on max height
+                          newHeight = CANVAS_HEIGHT - labelData.backgroundImage!.y;
+                          newWidth = newHeight * aspectRatio;
+                        }
                         
                         onLabelChange({
                           ...labelData,

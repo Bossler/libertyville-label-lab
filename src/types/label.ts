@@ -17,6 +17,8 @@ export interface ImageElement {
   width: number;
   height: number;
   rotation: number;
+  originalWidth: number;
+  originalHeight: number;
 }
 
 export interface LabelData {
