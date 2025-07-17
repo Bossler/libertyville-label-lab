@@ -211,10 +211,25 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
               ref={containerRef}
               className="relative border-2 border-muted overflow-hidden bg-muted/10"
               style={{
-                width: Math.min(canvasWidth, window.innerWidth - 120),
-                height: Math.min(canvasHeight, (window.innerWidth - 120) * 1.5),
-                maxWidth: canvasWidth,
-                maxHeight: canvasHeight,
+                width: (() => {
+                  // Calculate responsive size while maintaining 2:3 aspect ratio
+                  const maxWidth = Math.min(canvasWidth, window.innerWidth - 120);
+                  const maxHeight = Math.min(canvasHeight, window.innerHeight - 300); // Leave space for controls
+                  
+                  // Determine actual size based on what fits better
+                  const containerWidth = Math.min(maxWidth, maxHeight * (2/3));
+                  return containerWidth;
+                })(),
+                height: (() => {
+                  // Calculate responsive size while maintaining 2:3 aspect ratio
+                  const maxWidth = Math.min(canvasWidth, window.innerWidth - 120);
+                  const maxHeight = Math.min(canvasHeight, window.innerHeight - 300); // Leave space for controls
+                  
+                  // Determine actual size based on what fits better
+                  const containerWidth = Math.min(maxWidth, maxHeight * (2/3));
+                  const containerHeight = containerWidth * (3/2);
+                  return containerHeight;
+                })(),
                 cursor: isDragging ? 'grabbing' : 'grab'
               }}
               onMouseDown={handleMouseDown}
