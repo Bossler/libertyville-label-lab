@@ -46,11 +46,11 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
 
       if (imgAspect > cropAspect) {
         // Image is wider than the crop frame. Fit by height.
-        displayHeight = canvasHeight;
+        displayHeight = canvasHeight * zoom;
         displayWidth = displayHeight * imgAspect;
       } else {
         // Image is taller (or equal) than the crop frame. Fit by width.
-        displayWidth = canvasWidth;
+        displayWidth = canvasWidth * zoom;
         displayHeight = displayWidth / imgAspect;
       }
 
@@ -63,38 +63,11 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
     };
     
     img.src = imageUrl;
-  }, [imageUrl, canvasWidth, canvasHeight]);
+  }, [imageUrl, canvasWidth, canvasHeight, zoom]);
   
   // Handle zoom change
   const handleZoomChange = (newZoom: number[]) => {
-    const zoomValue = newZoom[0];
-    if (originalSize.width && originalSize.height) {
-      const cropAspect = canvasWidth / canvasHeight;
-      const imgAspect = originalSize.width / originalSize.height;
-
-      let displayWidth, displayHeight;
-
-      if (imgAspect > cropAspect) {
-        // Image is wider than the crop frame. Fit by height.
-        displayHeight = canvasHeight * zoomValue;
-        displayWidth = displayHeight * imgAspect;
-      } else {
-        // Image is taller (or equal) than the crop frame. Fit by width.
-        displayWidth = canvasWidth * zoomValue;
-        displayHeight = displayWidth / imgAspect;
-      }
-
-      // Adjust position to keep the center point stable during zoom
-      const centerX = position.x + (imageSize.width / 2);
-      const centerY = position.y + (imageSize.height / 2);
-      
-      const newX = centerX - (displayWidth / 2);
-      const newY = centerY - (displayHeight / 2);
-
-      setImageSize({ width: displayWidth, height: displayHeight });
-      setPosition({ x: newX, y: newY });
-      setZoom(zoomValue);
-    }
+    setZoom(newZoom[0]);
   };
   
   // Handle mouse down for dragging
