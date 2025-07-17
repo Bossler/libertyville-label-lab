@@ -4,7 +4,7 @@ import { Download, Image, Plus, Trash2, Type } from 'lucide-react';
 import { toast } from 'sonner';
 import { FontSelector } from './FontSelector';
 import { ColorPicker } from './ColorPicker';
-import { SimpleImageEditor } from './SimpleImageEditor';
+import { ImageAdjustModal } from './ImageAdjustModal';
 import { TextBoxEditor } from './TextBoxEditor';
 import { LabelData, ProductInfo, TextBox, ImageElement } from '@/types/label';
 
@@ -28,6 +28,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [previewMode, setPreviewMode] = useState(false);
   const [selectedTextBoxIndex, setSelectedTextBoxIndex] = useState<number | null>(null);
   const [showStylingPanel, setShowStylingPanel] = useState(false);
+  const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
 
   const CANVAS_WIDTH = 400;
   const CANVAS_HEIGHT = 600;
@@ -154,31 +155,23 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     if (file) {
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new window.Image();
-        img.onload = () => {
-          // Calculate scale to fit image in canvas
-          const scale = Math.min(CANVAS_WIDTH / img.width, CANVAS_HEIGHT / img.height) * 0.8;
-          const width = img.width * scale;
-          const height = img.height * scale;
-          
-          onLabelChange({
-            ...labelData,
-            backgroundImage: {
-              url: e.target?.result as string,
-              x: (CANVAS_WIDTH - width) / 2,
-              y: (CANVAS_HEIGHT - height) / 2,
-              width,
-              height,
-              rotation: 0,
-              originalWidth: img.width,
-              originalHeight: img.height
-            }
-          });
-        };
-        img.src = e.target?.result as string;
+        setTempImageUrl(e.target?.result as string);
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleImageConfirm = (imageElement: ImageElement) => {
+    onLabelChange({
+      ...labelData,
+      backgroundImage: imageElement
+    });
+    setTempImageUrl(null);
+    toast.success('Image added to label');
+  };
+
+  const handleImageCancel = () => {
+    setTempImageUrl(null);
   };
 
   // Event handlers
@@ -525,6 +518,17 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
         onChange={handleImageUpload}
         className="hidden"
       />
+
+      {/* Image Adjustment Modal */}
+      {tempImageUrl && (
+        <ImageAdjustModal
+          imageUrl={tempImageUrl}
+          onConfirm={handleImageConfirm}
+          onCancel={handleImageCancel}
+          canvasWidth={CANVAS_WIDTH}
+          canvasHeight={CANVAS_HEIGHT}
+        />
+      )}
     </div>
   );
 };
