@@ -1,28 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { LabelDesigner } from '@/components/LabelDesigner';
-
-interface ProductInfo {
-  name: string;
-  weight: string;
-  type: 'regular' | 'decaf';
-  grind: 'whole-bean' | 'ground';
-  price?: string;
-  description?: string;
-}
-
-interface LabelData {
-  coffeeName: string;
-  tastingNotes: string;
-  backgroundImage?: string;
-  fontFamily?: string;
-  textColor?: string;
-}
+import { LabelData, ProductInfo } from '@/types/label';
 
 const Index = () => {
   const [productInfo, setProductInfo] = useState<ProductInfo | null>(null);
   const [labelData, setLabelData] = useState<LabelData>({
     coffeeName: '',
-    tastingNotes: ''
+    coffeeNameFont: 'serif',
+    coffeeNameColor: '#ffffff',
+    textBoxes: []
   });
 
   // Extract product info from URL parameters (from Shopify)
@@ -52,11 +38,6 @@ const Index = () => {
       }
     }
   }, []);
-
-  const handleSuggestion = (suggestion: string, type: 'name' | 'notes') => {
-    // AI Assistant suggestions - users must manually copy and paste
-    console.log('AI suggestion generated:', { suggestion, type });
-  };
 
   return (
     <div className="min-h-screen bg-gradient-warmth">
