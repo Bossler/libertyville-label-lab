@@ -29,8 +29,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [selectedTextBoxIndex, setSelectedTextBoxIndex] = useState<number | null>(null);
   const [showStylingPanel, setShowStylingPanel] = useState(false);
 
-  const CANVAS_WIDTH = 384;
-  const CANVAS_HEIGHT = 512;
+  const CANVAS_WIDTH = 400;
+  const CANVAS_HEIGHT = 600;
 
   // Canvas drawing function
   const drawCanvas = useCallback(() => {
