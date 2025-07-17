@@ -87,7 +87,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.textAlign = 'center';
     ctx.font = `bold 32px ${labelData.coffeeNameFont || 'serif'}`;
     
-    const coffeeName = labelData.coffeeName || 'Coffee Name';
+    const coffeeName = productInfo?.name || labelData.coffeeName || 'Coffee Name';
     ctx.strokeText(coffeeName, CANVAS_WIDTH / 2, 80);
     ctx.fillText(coffeeName, CANVAS_WIDTH / 2, 80);
     ctx.restore();
@@ -142,11 +142,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.restore();
   };
 
-  useEffect(() => {
-    drawCanvas();
-  }, [drawCanvas]);
-
-  // Event handlers
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -177,6 +172,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }
   };
 
+  // Event handlers
   const addTextBox = () => {
     const newTextBox: TextBox = {
       id: Date.now().toString(),
@@ -213,13 +209,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       textBoxes: labelData.textBoxes.map(tb => 
         tb.id === updatedTextBox.id ? updatedTextBox : tb
       )
-    });
-  };
-
-  const updateCoffeeName = (newName: string) => {
-    onLabelChange({
-      ...labelData,
-      coffeeName: newName
     });
   };
 
@@ -260,14 +249,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     setTimeout(() => {
       const canvas = canvasRef.current;
       if (canvas) {
+        const coffeeName = productInfo?.name || labelData.coffeeName || 'custom-blend';
         const link = document.createElement('a');
-        link.download = `${labelData.coffeeName || 'custom-blend'}-label-preview.png`;
+        link.download = `${coffeeName}-label-preview.png`;
         link.href = canvas.toDataURL();
         link.click();
       }
       setPreviewMode(false);
     }, 100);
   };
+
+  useEffect(() => {
+    drawCanvas();
+  }, [drawCanvas]);
 
   const selectedTextBoxData = selectedTextBox 
     ? labelData.textBoxes.find(tb => tb.id === selectedTextBox) 
@@ -327,25 +321,23 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
         {/* Controls */}
         <div className="space-y-4">
-          {/* Coffee Name */}
+          {/* Coffee Name Display and Styling */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">Coffee Name</label>
-            <input
-              type="text"
-              value={labelData.coffeeName}
-              onChange={(e) => updateCoffeeName(e.target.value)}
-              className="w-full px-3 py-2 border border-input rounded-md"
-              placeholder="Enter coffee name"
-            />
-            <div className="flex gap-2">
-              <FontSelector
-                value={labelData.coffeeNameFont || 'serif'}
-                onChange={updateCoffeeNameFont}
-              />
-              <ColorPicker
-                value={labelData.coffeeNameColor || '#ffffff'}
-                onChange={updateCoffeeNameColor}
-              />
+            <label className="text-sm font-medium">Coffee Name Style</label>
+            <div className="p-3 border border-border rounded-md bg-muted/20">
+              <div className="text-sm text-muted-foreground mb-2">
+                {productInfo?.name || labelData.coffeeName || 'Coffee Name'}
+              </div>
+              <div className="flex gap-2">
+                <FontSelector
+                  value={labelData.coffeeNameFont || 'serif'}
+                  onChange={updateCoffeeNameFont}
+                />
+                <ColorPicker
+                  value={labelData.coffeeNameColor || '#ffffff'}
+                  onChange={updateCoffeeNameColor}
+                />
+              </div>
             </div>
           </div>
 
