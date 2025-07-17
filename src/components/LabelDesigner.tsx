@@ -40,15 +40,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Clear canvas
+    // Clear canvas (no background - let the uploaded image be the background)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw default gradient background (no image on canvas)
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#8B4513');
-    gradient.addColorStop(1, '#D2B48C');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     drawTextElements(ctx);
     if (previewMode) drawWatermark(ctx);
