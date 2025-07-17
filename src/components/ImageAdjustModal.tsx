@@ -19,58 +19,44 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
   canvasWidth,
   canvasHeight
 }) => {
-  // Refs
   const containerRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
-  
-  // State
+
   const [zoom, setZoom] = useState<number>(1);
   const [position, setPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const [dragStart, setDragStart] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
-  const [imageSize, setImageSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
-  const [originalSize, setOriginalSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
-  
-  // Load image and set initial position
+  const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
+
+  // When image loads, set its natural size and center it
   useEffect(() => {
     const img = new window.Image();
     img.onload = () => {
-      const originalWidth = img.width;
-      const originalHeight = img.height;
-      setOriginalSize({ width: originalWidth, height: originalHeight });
-      
-      const cropAspect = canvasWidth / canvasHeight; // should be 2/3 for 4"x6"
-      const imgAspect = originalWidth / originalHeight;
+      setImageNaturalSize({ width: img.width, height: img.height });
 
-      let displayWidth, displayHeight;
-
+      // Calculate best-fit (cover) zoom
+      const cropAspect = canvasWidth / canvasHeight;
+      const imgAspect = img.width / img.height;
+      let initialZoom;
       if (imgAspect > cropAspect) {
-        // Image is wider than the crop frame. Fit by height.
-        displayHeight = canvasHeight * zoom;
-        displayWidth = displayHeight * imgAspect;
+        initialZoom = canvasHeight / img.height;
       } else {
-        // Image is taller (or equal) than the crop frame. Fit by width.
-        displayWidth = canvasWidth * zoom;
-        displayHeight = displayWidth / imgAspect;
+        initialZoom = canvasWidth / img.width;
       }
+      setZoom(initialZoom);
 
-      // Center the image in the frame
-      const offsetX = (canvasWidth - displayWidth) / 2;
-      const offsetY = (canvasHeight - displayHeight) / 2;
-
-      setImageSize({ width: displayWidth, height: displayHeight });
-      setPosition({ x: offsetX, y: offsetY });
+      // Center image in crop box
+      const displayWidth = img.width * initialZoom;
+      const displayHeight = img.height * initialZoom;
+      setPosition({
+        x: (canvasWidth - displayWidth) / 2,
+        y: (canvasHeight - displayHeight) / 2
+      });
     };
-    
     img.src = imageUrl;
-  }, [imageUrl, canvasWidth, canvasHeight, zoom]);
-  
-  // Handle zoom change
-  const handleZoomChange = (newZoom: number[]) => {
-    setZoom(newZoom[0]);
-  };
-  
-  // Handle mouse down for dragging
+  }, [imageUrl, canvasWidth, canvasHeight]);
+
+  // Drag logic
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setDragStart({
@@ -78,93 +64,100 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
       y: e.clientY - position.y
     });
   };
-  
-  // Handle mouse move for dragging
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    
-    // Calculate new position based on mouse movement
     let newX = e.clientX - dragStart.x;
     let newY = e.clientY - dragStart.y;
-    
-    // Limit position to ensure image always covers the frame
-    const zoomedWidth = imageSize.width;
-    const zoomedHeight = imageSize.height;
-    
-    // Set bounds to ensure image covers the entire frame
-    const minX = canvasWidth - zoomedWidth;
-    const minY = canvasHeight - zoomedHeight;
-    
+
+    // Don't let image be moved so far that crop box has empty areas
+    const displayWidth = imageNaturalSize.width * zoom;
+    const displayHeight = imageNaturalSize.height * zoom;
+    const minX = canvasWidth - displayWidth;
+    const minY = canvasHeight - displayHeight;
     newX = Math.min(0, Math.max(minX, newX));
     newY = Math.min(0, Math.max(minY, newY));
-    
     setPosition({ x: newX, y: newY });
   };
-  
-  // Handle mouse up to stop dragging
-  const handleMouseUp = () => {
-    setIsDragging(false);
-  };
-  
-  // Handle confirm button click
-  const handleConfirm = () => {
-    // Scale factor between original image and displayed size
-    const scaleX = originalSize.width / imageSize.width;
-    const scaleY = originalSize.height / imageSize.height;
-    
-    // Create the final image element with adjusted values
-    const imageElement: ImageElement = {
-      url: imageUrl,
-      x: 0,
-      y: 0,
-      width: canvasWidth,
-      height: canvasHeight,
-      rotation: 0,
-      originalWidth: originalSize.width,
-      originalHeight: originalSize.height
-    };
-    
-    onConfirm(imageElement);
-  };
 
-  // Add event listeners for mouse events outside of the component
+  const handleMouseUp = () => setIsDragging(false);
+
+  // For dragging outside crop area
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      
-      // Calculate new position based on mouse movement
       let newX = e.clientX - dragStart.x;
       let newY = e.clientY - dragStart.y;
-      
-      // Limit position to ensure image always covers the frame
-      const zoomedWidth = imageSize.width;
-      const zoomedHeight = imageSize.height;
-      
-      // Set bounds to ensure image covers the entire frame
-      const minX = canvasWidth - zoomedWidth;
-      const minY = canvasHeight - zoomedHeight;
-      
+
+      const displayWidth = imageNaturalSize.width * zoom;
+      const displayHeight = imageNaturalSize.height * zoom;
+      const minX = canvasWidth - displayWidth;
+      const minY = canvasHeight - displayHeight;
       newX = Math.min(0, Math.max(minX, newX));
       newY = Math.min(0, Math.max(minY, newY));
-      
       setPosition({ x: newX, y: newY });
     };
-    
-    const handleGlobalMouseUp = () => {
-      setIsDragging(false);
-    };
-    
+    const handleGlobalMouseUp = () => setIsDragging(false);
+
     if (isDragging) {
       window.addEventListener('mousemove', handleGlobalMouseMove);
       window.addEventListener('mouseup', handleGlobalMouseUp);
     }
-    
     return () => {
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, dragStart, imageSize.width, imageSize.height, canvasWidth, canvasHeight]);
-  
+  }, [isDragging, dragStart, zoom, imageNaturalSize.width, imageNaturalSize.height, canvasWidth, canvasHeight]);
+
+  // Zoom handler: keep image centered as much as possible
+  const handleZoomChange = (newZoomArr: number[]) => {
+    const newZoom = newZoomArr[0];
+    // Find current center of crop box relative to image
+    const oldDisplayWidth = imageNaturalSize.width * zoom;
+    const oldDisplayHeight = imageNaturalSize.height * zoom;
+    const centerX = -position.x + canvasWidth / 2;
+    const centerY = -position.y + canvasHeight / 2;
+
+    // Compute where center should be with new zoom
+    const newDisplayWidth = imageNaturalSize.width * newZoom;
+    const newDisplayHeight = imageNaturalSize.height * newZoom;
+    const newCenterX = centerX * (newDisplayWidth / oldDisplayWidth);
+    const newCenterY = centerY * (newDisplayHeight / oldDisplayHeight);
+
+    let newX = canvasWidth / 2 - newCenterX;
+    let newY = canvasHeight / 2 - newCenterY;
+
+    // Clamp to avoid empty crop regions
+    const minX = canvasWidth - newDisplayWidth;
+    const minY = canvasHeight - newDisplayHeight;
+    newX = Math.min(0, Math.max(minX, newX));
+    newY = Math.min(0, Math.max(minY, newY));
+
+    setZoom(newZoom);
+    setPosition({ x: newX, y: newY });
+  };
+
+  // Confirm: output crop info for rendering/export
+  const handleConfirm = () => {
+    // Calculate cropping rectangle in original image coordinates
+    const sx = Math.round(-position.x / zoom);
+    const sy = Math.round(-position.y / zoom);
+    const sWidth = Math.round(canvasWidth / zoom);
+    const sHeight = Math.round(canvasHeight / zoom);
+
+    const imageElement: ImageElement = {
+      url: imageUrl,
+      x: sx,
+      y: sy,
+      width: sWidth,
+      height: sHeight,
+      rotation: 0,
+      originalWidth: imageNaturalSize.width,
+      originalHeight: imageNaturalSize.height
+    };
+    onConfirm(imageElement);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-background rounded-lg w-full max-w-4xl max-h-[95vh] overflow-auto">
@@ -175,12 +168,10 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
             Position and zoom your image to fit the label. Drag to reposition, use the slider to zoom.
           </p>
         </div>
-        
         {/* Main content */}
         <div className="p-4 space-y-6">
-          {/* Image adjustment area */}
           <div className="flex justify-center">
-            <div 
+            <div
               ref={containerRef}
               className="relative border-2 border-muted overflow-hidden bg-muted/10"
               style={{
@@ -200,8 +191,8 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
                   className="absolute"
                   style={{
                     position: 'absolute',
-                    width: `${imageSize.width}px`,
-                    height: `${imageSize.height}px`,
+                    width: `${imageNaturalSize.width * zoom}px`,
+                    height: `${imageNaturalSize.height * zoom}px`,
                     left: `${position.x}px`,
                     top: `${position.y}px`,
                     userSelect: 'none',
@@ -212,22 +203,20 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
               )}
             </div>
           </div>
-          
           {/* Zoom controls */}
           <div className="flex items-center space-x-4 max-w-md mx-auto">
             <ZoomOut className="w-4 h-4 flex-shrink-0" />
             <Slider
               value={[zoom]}
-              min={1}
+              min={Math.max(canvasWidth / imageNaturalSize.width, canvasHeight / imageNaturalSize.height)}
               max={3}
-              step={0.1}
+              step={0.01}
               className="flex-1"
               onValueChange={handleZoomChange}
             />
             <ZoomIn className="w-4 h-4 flex-shrink-0" />
           </div>
         </div>
-        
         {/* Footer */}
         <div className="p-4 border-t flex justify-end space-x-2">
           <Button variant="outline" onClick={onCancel}>
@@ -243,3 +232,4 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
     </div>
   );
 };
+
