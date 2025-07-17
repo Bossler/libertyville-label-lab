@@ -193,64 +193,71 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
   }, [isDragging, dragStart, imageSize.width, imageSize.height, zoom, canvasWidth, canvasHeight]);
   
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-background rounded-lg p-6 max-w-3xl w-full">
-        <h2 className="text-xl font-bold mb-4">Adjust Image</h2>
-        
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-background rounded-lg w-full max-w-4xl max-h-[95vh] overflow-auto">
+        {/* Header */}
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-bold">Adjust Image</h2>
+          <p className="text-sm text-muted-foreground mt-1">
             Position and zoom your image to fit the label. Drag to reposition, use the slider to zoom.
           </p>
         </div>
         
-        {/* Image adjustment area */}
-        <div 
-          ref={containerRef}
-          className="relative mb-6 mx-auto border-2 border-muted overflow-hidden"
-          style={{
-            width: canvasWidth,
-            height: canvasHeight,
-            cursor: isDragging ? 'grabbing' : 'grab'
-          }}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-        >
-          {imageUrl && (
-            <img
-              ref={imageRef}
-              src={imageUrl}
-              alt="Adjust"
-              className="absolute"
+        {/* Main content */}
+        <div className="p-4 space-y-6">
+          {/* Image adjustment area */}
+          <div className="flex justify-center">
+            <div 
+              ref={containerRef}
+              className="relative border-2 border-muted overflow-hidden bg-muted/10"
               style={{
-                width: `${imageSize.width * zoom}px`,
-                height: `${imageSize.height * zoom}px`,
-                left: `${position.x}px`,
-                top: `${position.y}px`,
-                userSelect: 'none',
-                pointerEvents: 'none'
+                width: Math.min(canvasWidth, window.innerWidth - 120),
+                height: Math.min(canvasHeight, (window.innerWidth - 120) * 1.5),
+                maxWidth: canvasWidth,
+                maxHeight: canvasHeight,
+                cursor: isDragging ? 'grabbing' : 'grab'
               }}
-              draggable={false}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+            >
+              {imageUrl && (
+                <img
+                  ref={imageRef}
+                  src={imageUrl}
+                  alt="Adjust"
+                  className="absolute"
+                  style={{
+                    width: `${imageSize.width * zoom}px`,
+                    height: `${imageSize.height * zoom}px`,
+                    left: `${position.x}px`,
+                    top: `${position.y}px`,
+                    userSelect: 'none',
+                    pointerEvents: 'none'
+                  }}
+                  draggable={false}
+                />
+              )}
+            </div>
+          </div>
+          
+          {/* Zoom controls */}
+          <div className="flex items-center space-x-4 max-w-md mx-auto">
+            <ZoomOut className="w-4 h-4 flex-shrink-0" />
+            <Slider
+              value={[zoom]}
+              min={1}
+              max={3}
+              step={0.1}
+              className="flex-1"
+              onValueChange={handleZoomChange}
             />
-          )}
+            <ZoomIn className="w-4 h-4 flex-shrink-0" />
+          </div>
         </div>
         
-        {/* Zoom controls */}
-        <div className="flex items-center space-x-4 mb-6">
-          <ZoomOut className="w-4 h-4" />
-          <Slider
-            value={[zoom]}
-            min={1}
-            max={3}
-            step={0.1}
-            className="flex-1"
-            onValueChange={handleZoomChange}
-          />
-          <ZoomIn className="w-4 h-4" />
-        </div>
-        
-        {/* Action buttons */}
-        <div className="flex justify-end space-x-2">
+        {/* Footer */}
+        <div className="p-4 border-t flex justify-end space-x-2">
           <Button variant="outline" onClick={onCancel}>
             <X className="w-4 h-4 mr-2" />
             Cancel
