@@ -113,6 +113,111 @@
   }
 }
 
+/* Font declarations for all available fonts */
+@font-face {
+  font-family: 'AgencyFB';
+  src: url('/fonts/AGENCYB.TTF') format('truetype');
+  font-weight: bold;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Alger';
+  src: url('/fonts/ALGER.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Antique';
+  src: url('/fonts/ANTQUAI.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bell';
+  src: url('/fonts/BELL.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Dubai';
+  src: url('/fonts/DUBAI-REGULAR.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FreeScript';
+  src: url('/fonts/FREESCPT.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FertigoPro';
+  src: url('/fonts/Fertigo Pro Regular.otf') format('opentype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'FuturaBlack';
+  src: url('/fonts/Futura Black.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'IntensaBlack';
+  src: url('/fonts/Intensa-Black-Condensed.otf') format('opentype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'InterstateMono';
+  src: url('/fonts/Interstate Cond Mono.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'InterstateBlack';
+  src: url('/fonts/InterstateBlack.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Jokerman';
+  src: url('/fonts/JOKERMAN.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'LithosPro';
+  src: url('/fonts/Lithos Pro Bold.otf') format('opentype');
+  font-weight: bold;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Mistral';
+  src: url('/fonts/MISTRAL.TTF') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ArialCustom';
+  src: url('/fonts/arial.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Bahnschrift';
+  src: url('/fonts/bahnschrift.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Cambria';
+  src: url('/fonts/cambria.ttc') format('truetype-collection');
+  font-display: swap;
+}
+
 @layer base {
   * {
     @apply border-border;
