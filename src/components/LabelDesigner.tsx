@@ -74,6 +74,24 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }
   }, [labelData, previewMode]);
 
+  // Helper function to calculate optimal font size for coffee name
+  const calculateOptimalFontSize = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxFontSize: number, minFontSize: number, fontFamily: string): number => {
+    let fontSize = maxFontSize;
+    
+    while (fontSize >= minFontSize) {
+      ctx.font = `bold ${fontSize}px ${fontFamily}`;
+      const textWidth = ctx.measureText(text).width;
+      
+      if (textWidth <= maxWidth) {
+        return fontSize;
+      }
+      
+      fontSize -= 2; // Reduce by 2px increments
+    }
+    
+    return minFontSize;
+  };
+
   const drawTextElements = (ctx: CanvasRenderingContext2D) => {
     const displayProductInfo = productInfo || {
       weight: '12 oz',
@@ -81,17 +99,59 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       type: 'regular' as const
     };
 
-    // Draw fixed coffee name at top center
+    // Draw dynamically scaled coffee name at top center
     ctx.save();
     ctx.fillStyle = labelData.coffeeNameColor || '#ffffff';
     ctx.strokeStyle = '#000000';
     ctx.lineWidth = 2;
     ctx.textAlign = 'center';
-    ctx.font = `bold 32px ${labelData.coffeeNameFont || 'serif'}`;
     
     const coffeeName = productInfo?.name || labelData.coffeeName || 'Coffee Name';
-    ctx.strokeText(coffeeName, CANVAS_WIDTH / 2, 80);
-    ctx.fillText(coffeeName, CANVAS_WIDTH / 2, 80);
+    const fontFamily = labelData.coffeeNameFont || 'serif';
+    const maxWidth = CANVAS_WIDTH - 40; // Leave 20px margin on each side
+    const maxFontSize = 32;
+    const minFontSize = 16;
+    
+    // Calculate optimal font size
+    const optimalFontSize = calculateOptimalFontSize(ctx, coffeeName, maxWidth, maxFontSize, minFontSize, fontFamily);
+    ctx.font = `bold ${optimalFontSize}px ${fontFamily}`;
+    
+    // Check if text still doesn't fit at minimum size - wrap if needed
+    const textWidth = ctx.measureText(coffeeName).width;
+    if (textWidth > maxWidth && optimalFontSize === minFontSize) {
+      // Split text into words and wrap
+      const words = coffeeName.split(' ');
+      const lines: string[] = [];
+      let currentLine = '';
+      
+      for (const word of words) {
+        const testLine = currentLine ? `${currentLine} ${word}` : word;
+        const testWidth = ctx.measureText(testLine).width;
+        
+        if (testWidth <= maxWidth) {
+          currentLine = testLine;
+        } else {
+          if (currentLine) lines.push(currentLine);
+          currentLine = word;
+        }
+      }
+      if (currentLine) lines.push(currentLine);
+      
+      // Draw wrapped text
+      const lineHeight = optimalFontSize * 1.2;
+      const startY = 80 - ((lines.length - 1) * lineHeight) / 2;
+      
+      lines.forEach((line, index) => {
+        const y = startY + index * lineHeight;
+        ctx.strokeText(line, CANVAS_WIDTH / 2, y);
+        ctx.fillText(line, CANVAS_WIDTH / 2, y);
+      });
+    } else {
+      // Draw single line
+      ctx.strokeText(coffeeName, CANVAS_WIDTH / 2, 80);
+      ctx.fillText(coffeeName, CANVAS_WIDTH / 2, 80);
+    }
+    
     ctx.restore();
 
     // Draw custom text boxes
