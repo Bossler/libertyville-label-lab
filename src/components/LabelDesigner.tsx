@@ -29,6 +29,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [selectedTextBoxIndex, setSelectedTextBoxIndex] = useState<number | null>(null);
   const [showStylingPanel, setShowStylingPanel] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragAnimationId, setDragAnimationId] = useState<number | null>(null);
 
   const CANVAS_WIDTH = 400;
   const CANVAS_HEIGHT = 600;
@@ -408,35 +410,75 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                     e.preventDefault();
                     e.stopPropagation();
                     
+                    setIsDragging(true);
+                    
                     const startX = e.clientX;
                     const startY = e.clientY;
                     const startImageX = labelData.backgroundImage!.x;
                     const startImageY = labelData.backgroundImage!.y;
                     
+                    let currentX = startImageX;
+                    let currentY = startImageY;
+                    let lastUpdateTime = 0;
+                    
                     const handleMouseMove = (moveEvent: MouseEvent) => {
+                      moveEvent.preventDefault();
+                      
+                      const now = performance.now();
+                      if (now - lastUpdateTime < 16) return; // ~60fps throttling
+                      lastUpdateTime = now;
+                      
                       const deltaX = moveEvent.clientX - startX;
                       const deltaY = moveEvent.clientY - startY;
                       
-                      // Invert the delta to make drag feel intuitive
-                      const newX = startImageX - deltaX;
-                      const newY = startImageY - deltaY;
+                      // Natural drag direction (no inversion needed)
+                      currentX = startImageX + deltaX;
+                      currentY = startImageY + deltaY;
                       
+                      // Cancel any pending animation frame
+                      if (dragAnimationId) {
+                        cancelAnimationFrame(dragAnimationId);
+                      }
+                      
+                      // Use requestAnimationFrame for smooth updates
+                      const animId = requestAnimationFrame(() => {
+                        onLabelChange({
+                          ...labelData,
+                          backgroundImage: {
+                            ...labelData.backgroundImage!,
+                            x: currentX,
+                            y: currentY
+                          }
+                        });
+                      });
+                      
+                      setDragAnimationId(animId);
+                    };
+                    
+                    const handleMouseUp = () => {
+                      setIsDragging(false);
+                      if (dragAnimationId) {
+                        cancelAnimationFrame(dragAnimationId);
+                        setDragAnimationId(null);
+                      }
+                      
+                      // Ensure final position is set
                       onLabelChange({
                         ...labelData,
                         backgroundImage: {
                           ...labelData.backgroundImage!,
-                          x: newX,
-                          y: newY
+                          x: currentX,
+                          y: currentY
                         }
                       });
-                    };
-                    
-                    const handleMouseUp = () => {
+                      
                       document.removeEventListener('mousemove', handleMouseMove);
                       document.removeEventListener('mouseup', handleMouseUp);
+                      document.body.style.cursor = '';
                     };
                     
-                    document.addEventListener('mousemove', handleMouseMove);
+                    document.body.style.cursor = 'grabbing';
+                    document.addEventListener('mousemove', handleMouseMove, { passive: false });
                     document.addEventListener('mouseup', handleMouseUp);
                   }}
                 >
