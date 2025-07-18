@@ -114,25 +114,42 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     // Product info footer
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
-    const productInfoY = CANVAS_HEIGHT - 156;
+    
+    // All footer text uses Fertigo Pro at 10pt (8px at canvas scale)
+    const footerFontSize = 8; // 10pt at 72dpi = 8px at 96dpi canvas scale
+    const footerFont = 'FertigoPro, serif';
+    ctx.font = `${footerFontSize}px ${footerFont}`;
+    
+    // Calculate text positions - moved closer together
+    const productInfoY = CANVAS_HEIGHT - 80;
     const today = new Date();
     const roastDate = today.toLocaleDateString();
     
-    // All footer text uses Fertigo Pro at 8pt (approximately 6px at canvas scale)
-    const footerFontSize = 6; // 8pt at 72dpi = 6px at 96dpi canvas scale
-    const footerFont = 'FertigoPro, serif';
+    // Draw rounded rectangle background with 70% white transparency
+    const padding = 8;
+    const backgroundY = productInfoY - 16;
+    const backgroundHeight = 68;
+    const backgroundWidth = 320;
+    const backgroundX = (CANVAS_WIDTH - backgroundWidth) / 2;
+    const cornerRadius = 8;
     
-    ctx.font = `${footerFontSize}px ${footerFont}`;
+    ctx.save();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.beginPath();
+    ctx.roundRect(backgroundX, backgroundY, backgroundWidth, backgroundHeight, cornerRadius);
+    ctx.fill();
+    ctx.restore();
     
     // Product details grouped together
+    ctx.fillStyle = '#000000';
     ctx.fillText(`${displayProductInfo.weight} • ${displayProductInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'} • ${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, CANVAS_WIDTH / 2, productInfoY);
     ctx.fillText(`Roast Date: ${roastDate}`, CANVAS_WIDTH / 2, productInfoY + 12);
 
     // Company info
-    ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 60);
-    ctx.fillText('Libertyville IL', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 48);
-    ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 36);
-    ctx.fillText('100% Arabica Coffee & Natural Flavors', CANVAS_WIDTH / 2, CANVAS_HEIGHT - 24);
+    ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', CANVAS_WIDTH / 2, productInfoY + 28);
+    ctx.fillText('Libertyville IL', CANVAS_WIDTH / 2, productInfoY + 40);
+    ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, productInfoY + 52);
+    ctx.fillText('100% Arabica Coffee & Natural Flavors', CANVAS_WIDTH / 2, productInfoY + 64);
   };
 
   const drawWatermark = (ctx: CanvasRenderingContext2D) => {
