@@ -121,9 +121,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const roastDate = today.toLocaleDateString();
     
     // Draw rounded rectangle background with 70% white transparency
-    const padding = 8;
-    const backgroundY = productInfoY - 16;
-    const backgroundHeight = 68;
+    const padding = 10;
+    const backgroundHeight = 110; // Increased height to fit all text properly
+    const backgroundY = CANVAS_HEIGHT - backgroundHeight - 10;
     const backgroundWidth = 320;
     const backgroundX = (CANVAS_WIDTH - backgroundWidth) / 2;
     const cornerRadius = 8;
@@ -135,7 +135,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.fill();
     ctx.restore();
     
-     // Product details - 10pt font, top justified to box
+    // Product details - 10pt font, top justified to box
     const productFontSize = 13; // 10pt at 96dpi = 13px
     const productFont = 'FertigoPro, serif';
     ctx.font = `${productFontSize}px ${productFont}`;
@@ -157,19 +157,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.fillText(`${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, rightX, productTopY);
     
     ctx.textAlign = 'center';
-    ctx.fillText(`Roast Date: ${roastDate}`, CANVAS_WIDTH / 2, productTopY + 18);
+    ctx.fillText(`Roast Date: ${roastDate}`, CANVAS_WIDTH / 2, productTopY + 20);
 
     // Company info - 8pt font, bottom justified to box
     const footerFontSize = 11; // 8pt at 96dpi = 11px
     const footerFont = 'FertigoPro, serif';
     ctx.font = `${footerFontSize}px ${footerFont}`;
     
-    // Position footer data at bottom of rectangle
+    // Position footer data at bottom of rectangle with proper spacing
     const footerBottomY = backgroundY + backgroundHeight - padding;
     
-    ctx.fillText('100% Arabica Coffee & Natural Flavors', CANVAS_WIDTH / 2, footerBottomY - 22);
-    ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, footerBottomY - 11);
-    ctx.fillText('JavaMania Coffee Roastery | Libertyville IL', CANVAS_WIDTH / 2, footerBottomY);
+    ctx.fillText('JavaMania Coffee Roastery | Libertyville IL', CANVAS_WIDTH / 2, footerBottomY - 24);
+    ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, footerBottomY - 12);
+    ctx.fillText('100% Arabica Coffee & Natural Flavors', CANVAS_WIDTH / 2, footerBottomY);
   };
 
   const drawWatermark = (ctx: CanvasRenderingContext2D) => {
