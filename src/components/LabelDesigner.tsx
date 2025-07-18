@@ -15,6 +15,9 @@ interface LabelDesignerProps {
   productInfo?: ProductInfo | null;
 }
 
+const CANVAS_WIDTH = 400;
+const CANVAS_HEIGHT = 600;
+
 export const LabelDesigner: React.FC<LabelDesignerProps> = ({ 
   labelData, 
   onLabelChange,
@@ -29,9 +32,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [selectedTextBoxIndex, setSelectedTextBoxIndex] = useState<number | null>(null);
   const [showStylingPanel, setShowStylingPanel] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
-
-  const CANVAS_WIDTH = 400;
-  const CANVAS_HEIGHT = 600;
+  const [coffeeNamePosition, setCoffeeNamePosition] = useState({ x: CANVAS_WIDTH / 2, y: 80 });
+  const [isDraggingCoffeeName, setIsDraggingCoffeeName] = useState(false);
 
   // Canvas drawing function
   const drawCanvas = useCallback(() => {
@@ -99,7 +101,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       type: 'regular' as const
     };
 
-    // Draw dynamically scaled coffee name at top center
+    // Draw dynamically scaled coffee name at current position
     ctx.save();
     ctx.fillStyle = labelData.coffeeNameColor || '#ffffff';
     ctx.strokeStyle = '#000000';
@@ -137,19 +139,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       }
       if (currentLine) lines.push(currentLine);
       
-      // Draw wrapped text
+      // Draw wrapped text at current position
       const lineHeight = optimalFontSize * 1.2;
-      const startY = 80 - ((lines.length - 1) * lineHeight) / 2;
+      const startY = coffeeNamePosition.y - ((lines.length - 1) * lineHeight) / 2;
       
       lines.forEach((line, index) => {
         const y = startY + index * lineHeight;
-        ctx.strokeText(line, CANVAS_WIDTH / 2, y);
-        ctx.fillText(line, CANVAS_WIDTH / 2, y);
+        ctx.strokeText(line, coffeeNamePosition.x, y);
+        ctx.fillText(line, coffeeNamePosition.x, y);
       });
     } else {
-      // Draw single line
-      ctx.strokeText(coffeeName, CANVAS_WIDTH / 2, 80);
-      ctx.fillText(coffeeName, CANVAS_WIDTH / 2, 80);
+      // Draw single line at current position
+      ctx.strokeText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
+      ctx.fillText(coffeeName, coffeeNamePosition.x, coffeeNamePosition.y);
     }
     
     ctx.restore();
@@ -355,9 +357,83 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     }, 100);
   };
 
+  // Helper function to get text bounds for coffee name
+  const getCoffeeNameBounds = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    
+    const coffeeName = productInfo?.name || labelData.coffeeName || 'Coffee Name';
+    const fontFamily = labelData.coffeeNameFont || 'serif';
+    const maxWidth = CANVAS_WIDTH - 40;
+    const maxFontSize = 32;
+    const minFontSize = 16;
+    
+    const optimalFontSize = calculateOptimalFontSize(ctx, coffeeName, maxWidth, maxFontSize, minFontSize, fontFamily);
+    ctx.font = `bold ${optimalFontSize}px ${fontFamily}`;
+    
+    const textWidth = ctx.measureText(coffeeName).width;
+    const textHeight = optimalFontSize;
+    
+    return {
+      width: Math.min(textWidth, maxWidth),
+      height: textHeight
+    };
+  };
+
+  // Handle coffee name drag
+  const handleCoffeeNameMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    setIsDraggingCoffeeName(true);
+    
+    const rect = overlayRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    const startX = e.clientX - rect.left;
+    const startY = e.clientY - rect.top;
+    const startPosX = coffeeNamePosition.x;
+    const startPosY = coffeeNamePosition.y;
+    
+    const bounds = getCoffeeNameBounds();
+    if (!bounds) return;
+    
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const currentX = moveEvent.clientX - rect.left;
+      const currentY = moveEvent.clientY - rect.top;
+      
+      const deltaX = currentX - startX;
+      const deltaY = currentY - startY;
+      
+      let newX = startPosX + deltaX;
+      let newY = startPosY + deltaY;
+      
+      // Constrain to canvas bounds - keep text fully visible
+      const halfWidth = bounds.width / 2;
+      const textBottom = bounds.height;
+      
+      newX = Math.max(halfWidth, Math.min(CANVAS_WIDTH - halfWidth, newX));
+      newY = Math.max(textBottom, Math.min(CANVAS_HEIGHT - 10, newY));
+      
+      setCoffeeNamePosition({ x: newX, y: newY });
+    };
+    
+    const handleMouseUp = () => {
+      setIsDraggingCoffeeName(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
+
   useEffect(() => {
     drawCanvas();
-  }, [drawCanvas]);
+  }, [drawCanvas, coffeeNamePosition]);
 
   const selectedTextBoxData = selectedTextBoxIndex !== null 
     ? labelData.textBoxes[selectedTextBoxIndex] 
@@ -384,6 +460,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             
             {/* Interactive overlay - positioned exactly over canvas */}
             <div
+              ref={overlayRef}
               className="absolute top-0 left-0 pointer-events-auto"
               style={{
                 width: CANVAS_WIDTH,
@@ -392,6 +469,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 overflow: 'hidden'
               }}
             >
+              {/* Coffee Name Drag Area */}
+              <div
+                className={`absolute cursor-move ${isDraggingCoffeeName ? 'bg-blue-200 bg-opacity-30' : 'hover:bg-blue-100 hover:bg-opacity-20'} transition-colors`}
+                style={{
+                  left: coffeeNamePosition.x - (getCoffeeNameBounds()?.width || 100) / 2 - 10,
+                  top: coffeeNamePosition.y - (getCoffeeNameBounds()?.height || 20) - 5,
+                  width: (getCoffeeNameBounds()?.width || 100) + 20,
+                  height: (getCoffeeNameBounds()?.height || 20) + 10,
+                  zIndex: 10
+                }}
+                onMouseDown={handleCoffeeNameMouseDown}
+                title="Drag to move coffee name"
+              />
               {/* Image drag/resize handles only - no image display */}
               {labelData.backgroundImage && (
                 <div
