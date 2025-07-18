@@ -8,6 +8,7 @@ export interface TextBox {
   color: string;
   width: number;
   height: number;
+  type?: 'regular' | 'freeText';
 }
 
 export interface ImageElement {

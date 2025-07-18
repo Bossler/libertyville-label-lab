@@ -1,12 +1,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Image, Plus, Trash2, Type, X } from 'lucide-react';
+import { Download, Image, Plus, Trash2, Type, X, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { FontSelector } from './FontSelector';
 import { ColorPicker } from './ColorPicker';
 import { ImageAdjustModal } from './ImageAdjustModal';
 import { TextBoxEditor } from './TextBoxEditor';
 import { CoffeeNameToolbar } from './CoffeeNameToolbar';
+import { FreeTextToolbar } from './FreeTextToolbar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { LabelData, ProductInfo, TextBox, ImageElement } from '@/types/label';
 
@@ -35,6 +36,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [showStylingPanel, setShowStylingPanel] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const [isDraggingCoffeeName, setIsDraggingCoffeeName] = useState(false);
+  const [isHoveringFreeText, setIsHoveringFreeText] = useState<number | null>(null);
+  const [freeTextHoverTimeout, setFreeTextHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Mobile-specific state for coffee name selection
   const isMobile = useIsMobile();
@@ -166,22 +169,44 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     
     ctx.restore();
 
-    // Draw custom text boxes
-    labelData.textBoxes.forEach(textBox => {
-      ctx.save();
-      ctx.fillStyle = textBox.color;
-      ctx.font = `${textBox.fontSize}px ${textBox.fontFamily}`;
-      
-      const lines = textBox.content.split('\n');
-      lines.forEach((line, index) => {
-        ctx.fillText(
-          line, 
-          textBox.x, 
-          textBox.y + (index + 1) * textBox.fontSize * 1.2
-        );
+    // Draw text boxes in proper layer order
+    // Free text first (behind regular text boxes)
+    labelData.textBoxes
+      .filter(textBox => textBox.type === 'freeText')
+      .forEach(textBox => {
+        ctx.save();
+        ctx.fillStyle = textBox.color;
+        ctx.font = `${textBox.fontSize}px ${textBox.fontFamily}`;
+        
+        const lines = textBox.content.split('\n');
+        lines.forEach((line, index) => {
+          ctx.fillText(
+            line, 
+            textBox.x, 
+            textBox.y + (index + 1) * textBox.fontSize * 1.2
+          );
+        });
+        ctx.restore();
       });
-      ctx.restore();
-    });
+
+    // Regular text boxes second
+    labelData.textBoxes
+      .filter(textBox => textBox.type !== 'freeText')
+      .forEach(textBox => {
+        ctx.save();
+        ctx.fillStyle = textBox.color;
+        ctx.font = `${textBox.fontSize}px ${textBox.fontFamily}`;
+        
+        const lines = textBox.content.split('\n');
+        lines.forEach((line, index) => {
+          ctx.fillText(
+            line, 
+            textBox.x, 
+            textBox.y + (index + 1) * textBox.fontSize * 1.2
+          );
+        });
+        ctx.restore();
+      });
 
     // Product info footer
     ctx.fillStyle = '#000000';
@@ -291,12 +316,34 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       fontFamily: 'serif',
       color: '#000000',
       width: 200,
-      height: 50
+      height: 50,
+      type: 'regular'
     };
 
     onLabelChange({
       ...labelData,
       textBoxes: [...labelData.textBoxes, newTextBox]
+    });
+    setSelectedTextBoxIndex(labelData.textBoxes.length);
+  };
+
+  const addFreeText = () => {
+    const newFreeText: TextBox = {
+      id: Date.now().toString(),
+      content: 'Free Text',
+      x: 50,
+      y: 150,
+      fontSize: 24,
+      fontFamily: 'serif',
+      color: '#ffffff',
+      width: 300,
+      height: 60,
+      type: 'freeText'
+    };
+
+    onLabelChange({
+      ...labelData,
+      textBoxes: [...labelData.textBoxes, newFreeText]
     });
     setSelectedTextBoxIndex(labelData.textBoxes.length);
   };
@@ -355,6 +402,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       const textBox = labelData.textBoxes[selectedTextBoxIndex];
       if (textBox) {
         updateTextBox({ ...textBox, color });
+      }
+    }
+  };
+
+  const updateSelectedTextBoxFontSize = (size: number) => {
+    if (selectedTextBoxIndex !== null) {
+      const textBox = labelData.textBoxes[selectedTextBoxIndex];
+      if (textBox) {
+        updateTextBox({ ...textBox, fontSize: size });
       }
     }
   };
@@ -658,17 +714,72 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               
               {/* Text boxes - LAYER 10 (TOP) */}
               {labelData.textBoxes.map((textBox, index) => (
-                <TextBoxEditor
-                  key={`textbox-${textBox.id}`}
-                  textBox={textBox}
-                  canvasWidth={CANVAS_WIDTH}
-                  canvasHeight={CANVAS_HEIGHT}
-                  isSelected={selectedTextBoxIndex === index}
-                  onTextBoxChange={(updatedTextBox) => {
-                    updateTextBox(updatedTextBox);
-                  }}
-                  onSelect={() => setSelectedTextBoxIndex(index)}
-                />
+                <div key={`textbox-container-${textBox.id}`} className="relative">
+                  <TextBoxEditor
+                    textBox={textBox}
+                    canvasWidth={CANVAS_WIDTH}
+                    canvasHeight={CANVAS_HEIGHT}
+                    isSelected={selectedTextBoxIndex === index}
+                    onTextBoxChange={(updatedTextBox) => {
+                      updateTextBox(updatedTextBox);
+                    }}
+                    onSelect={() => setSelectedTextBoxIndex(index)}
+                  />
+                  
+                  {/* Free Text Hover Area for Desktop Toolbar */}
+                  {textBox.type === 'freeText' && !isMobile && (
+                    <div
+                      className="absolute cursor-move hover:bg-blue-100 hover:bg-opacity-20 transition-colors"
+                      style={{
+                        left: textBox.x - 5,
+                        top: textBox.y - 5,
+                        width: textBox.width + 10,
+                        height: textBox.height + 10,
+                        zIndex: 95
+                      }}
+                      onMouseEnter={() => {
+                        if (freeTextHoverTimeout) {
+                          clearTimeout(freeTextHoverTimeout);
+                          setFreeTextHoverTimeout(null);
+                        }
+                        setIsHoveringFreeText(index);
+                      }}
+                      onMouseLeave={() => {
+                        const timeout = setTimeout(() => {
+                          setIsHoveringFreeText(null);
+                        }, 150);
+                        setFreeTextHoverTimeout(timeout);
+                      }}
+                    />
+                  )}
+                  
+                  {/* Free Text Floating Toolbar */}
+                  {textBox.type === 'freeText' && isHoveringFreeText === index && !isMobile && (
+                    <FreeTextToolbar
+                      textBox={textBox}
+                      position={{ x: textBox.x + textBox.width / 2, y: textBox.y }}
+                      bounds={{ width: textBox.width, height: textBox.height }}
+                      onFontChange={(font) => updateTextBox({ ...textBox, fontFamily: font })}
+                      onColorChange={(color) => updateTextBox({ ...textBox, color })}
+                      onFontSizeChange={(size) => updateTextBox({ ...textBox, fontSize: size })}
+                      isVisible={true}
+                      canvasWidth={CANVAS_WIDTH}
+                      canvasHeight={CANVAS_HEIGHT}
+                      onMouseEnter={() => {
+                        if (freeTextHoverTimeout) {
+                          clearTimeout(freeTextHoverTimeout);
+                          setFreeTextHoverTimeout(null);
+                        }
+                      }}
+                      onMouseLeave={() => {
+                        const timeout = setTimeout(() => {
+                          setIsHoveringFreeText(null);
+                        }, 150);
+                        setFreeTextHoverTimeout(timeout);
+                      }}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -738,7 +849,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           </div>
 
           {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <Button
               onClick={() => fileInputRef.current?.click()}
               variant="outline"
@@ -746,6 +857,15 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             >
               <Image className="w-4 h-4 mr-2" />
               Upload Image
+            </Button>
+            
+            <Button
+              onClick={addFreeText}
+              variant="outline"
+              className="w-full"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Free Text
             </Button>
             
             <Button
@@ -761,7 +881,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           {/* Selected Text Box Controls */}
           {selectedTextBoxData && (
             <div className="space-y-2 p-3 border border-border rounded-md">
-              <h3 className="text-sm font-medium">Selected Text Box</h3>
+              <h3 className="text-sm font-medium">
+                Selected {selectedTextBoxData.type === 'freeText' ? 'Free Text' : 'Text Box'}
+              </h3>
               <div className="flex gap-2">
                 <FontSelector
                   value={selectedTextBoxData.fontFamily}
@@ -779,15 +901,14 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   min="8"
                   max="48"
                   value={selectedTextBoxData.fontSize}
-                  onChange={(e) => updateTextBox({
-                    ...selectedTextBoxData,
-                    fontSize: parseInt(e.target.value)
-                  })}
+                  onChange={(e) => updateSelectedTextBoxFontSize(parseInt(e.target.value))}
                   className="w-full"
                 />
-                <span className="text-xs text-muted-foreground">
-                  {selectedTextBoxData.fontSize}px
-                </span>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>8px</span>
+                  <span>{selectedTextBoxData.fontSize}px</span>
+                  <span>48px</span>
+                </div>
               </div>
               <Button
                 onClick={deleteSelectedTextBox}
