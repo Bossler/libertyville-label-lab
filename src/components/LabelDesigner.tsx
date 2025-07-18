@@ -36,8 +36,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [showStylingPanel, setShowStylingPanel] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const [isDraggingCoffeeName, setIsDraggingCoffeeName] = useState(false);
-  const [isHoveringFreeText, setIsHoveringFreeText] = useState<number | null>(null);
-  const [freeTextHoverTimeout, setFreeTextHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   
   // Mobile-specific state for coffee name selection
   const isMobile = useIsMobile();
@@ -169,7 +167,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     
     ctx.restore();
 
-    // Draw text boxes in proper layer order
+    // Draw text boxes in proper layer order with proper text wrapping
     // Free text first (behind regular text boxes)
     labelData.textBoxes
       .filter(textBox => textBox.type === 'freeText')
@@ -179,10 +177,38 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
         ctx.font = `${textBox.fontSize}px ${textBox.fontFamily}`;
         
         const lines = textBox.content.split('\n');
-        lines.forEach((line, index) => {
+        const maxWidth = textBox.width - 10; // Leave some padding
+        const wrappedLines: string[] = [];
+        
+        // Wrap text to fit within textBox width
+        lines.forEach(line => {
+          if (ctx.measureText(line).width <= maxWidth) {
+            wrappedLines.push(line);
+          } else {
+            // Split line into words and wrap
+            const words = line.split(' ');
+            let currentLine = '';
+            
+            for (const word of words) {
+              const testLine = currentLine ? `${currentLine} ${word}` : word;
+              const testWidth = ctx.measureText(testLine).width;
+              
+              if (testWidth <= maxWidth) {
+                currentLine = testLine;
+              } else {
+                if (currentLine) wrappedLines.push(currentLine);
+                currentLine = word;
+              }
+            }
+            if (currentLine) wrappedLines.push(currentLine);
+          }
+        });
+        
+        // Draw wrapped lines
+        wrappedLines.forEach((line, index) => {
           ctx.fillText(
             line, 
-            textBox.x, 
+            textBox.x + 5, // Small left padding
             textBox.y + (index + 1) * textBox.fontSize * 1.2
           );
         });
@@ -335,7 +361,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       y: 150,
       fontSize: 24,
       fontFamily: 'serif',
-      color: '#ffffff',
+      color: '#ffffff', // White default for visibility
       width: 300,
       height: 60,
       type: 'freeText'
@@ -726,35 +752,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                     onSelect={() => setSelectedTextBoxIndex(index)}
                   />
                   
-                  {/* Free Text Hover Area for Desktop Toolbar */}
-                  {textBox.type === 'freeText' && !isMobile && (
-                    <div
-                      className="absolute cursor-move hover:bg-blue-100 hover:bg-opacity-20 transition-colors"
-                      style={{
-                        left: textBox.x - 5,
-                        top: textBox.y - 5,
-                        width: textBox.width + 10,
-                        height: textBox.height + 10,
-                        zIndex: 95
-                      }}
-                      onMouseEnter={() => {
-                        if (freeTextHoverTimeout) {
-                          clearTimeout(freeTextHoverTimeout);
-                          setFreeTextHoverTimeout(null);
-                        }
-                        setIsHoveringFreeText(index);
-                      }}
-                      onMouseLeave={() => {
-                        const timeout = setTimeout(() => {
-                          setIsHoveringFreeText(null);
-                        }, 150);
-                        setFreeTextHoverTimeout(timeout);
-                      }}
-                    />
-                  )}
-                  
-                  {/* Free Text Floating Toolbar */}
-                  {textBox.type === 'freeText' && isHoveringFreeText === index && !isMobile && (
+                  {/* Free Text Floating Toolbar - Only on Desktop */}
+                  {textBox.type === 'freeText' && selectedTextBoxIndex === index && !isMobile && (
                     <FreeTextToolbar
                       textBox={textBox}
                       position={{ x: textBox.x + textBox.width / 2, y: textBox.y }}
@@ -765,18 +764,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       isVisible={true}
                       canvasWidth={CANVAS_WIDTH}
                       canvasHeight={CANVAS_HEIGHT}
-                      onMouseEnter={() => {
-                        if (freeTextHoverTimeout) {
-                          clearTimeout(freeTextHoverTimeout);
-                          setFreeTextHoverTimeout(null);
-                        }
-                      }}
-                      onMouseLeave={() => {
-                        const timeout = setTimeout(() => {
-                          setIsHoveringFreeText(null);
-                        }, 150);
-                        setFreeTextHoverTimeout(timeout);
-                      }}
                     />
                   )}
                 </div>

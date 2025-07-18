@@ -90,13 +90,13 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
 
   return (
     <div
-      className={`absolute cursor-move ${isSelected ? 'border-2 border-blue-500' : 'border border-transparent'}`}
+      className={`absolute cursor-move ${isSelected ? 'border-2 border-blue-500' : 'border border-transparent hover:border-blue-300'} rounded`}
       style={{
         left: textBox.x,
         top: textBox.y,
         width: textBox.width,
         height: textBox.height,
-        zIndex: 100
+        zIndex: 150 // Higher z-index to ensure draggability
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={handleDoubleClick}
