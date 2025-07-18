@@ -5,48 +5,39 @@ import { ColorPicker } from './ColorPicker';
 import { TextBox } from '@/types/label';
 
 interface FreeTextToolbarProps {
-  textBox: TextBox;
-  position: { x: number; y: number };
-  bounds: { width: number; height: number } | null;
+  selectedTextBox: TextBox;
+  position?: { x: number; y: number };
   onFontChange: (font: string) => void;
   onColorChange: (color: string) => void;
   onFontSizeChange: (size: number) => void;
+  onDelete: () => void;
   isVisible: boolean;
-  canvasWidth: number;
-  canvasHeight: number;
-  onMouseEnter?: () => void;
-  onMouseLeave?: () => void;
 }
 
 export const FreeTextToolbar: React.FC<FreeTextToolbarProps> = ({
-  textBox,
-  position,
-  bounds,
+  selectedTextBox,
+  position = { x: 0, y: 0 },
   onFontChange,
   onColorChange,
   onFontSizeChange,
-  isVisible,
-  canvasWidth,
-  canvasHeight,
-  onMouseEnter,
-  onMouseLeave
+  onDelete,
+  isVisible
 }) => {
-  if (!isVisible || !bounds) return null;
+  if (!isVisible) return null;
 
   // Calculate toolbar position - above the text box
-  const toolbarWidth = 300;
-  const toolbarHeight = 80;
+  const toolbarWidth = 320;
+  const toolbarHeight = 120;
   
-  let toolbarX = position.x - toolbarWidth / 2;
-  let toolbarY = position.y - bounds.height - toolbarHeight - 10;
+  let toolbarX = position.x;
+  let toolbarY = position.y;
   
-  // Keep toolbar within canvas bounds
-  toolbarX = Math.max(10, Math.min(canvasWidth - toolbarWidth - 10, toolbarX));
+  // Keep toolbar within viewport bounds
+  const maxX = window.innerWidth - toolbarWidth - 20;
+  const maxY = window.innerHeight - toolbarHeight - 20;
   
-  // If toolbar would go above canvas, position it below
-  if (toolbarY < 10) {
-    toolbarY = position.y + bounds.height + 10;
-  }
+  toolbarX = Math.max(20, Math.min(maxX, toolbarX));
+  toolbarY = Math.max(20, Math.min(maxY, toolbarY));
 
   return (
     <div
@@ -54,20 +45,30 @@ export const FreeTextToolbar: React.FC<FreeTextToolbarProps> = ({
       style={{
         left: toolbarX,
         top: toolbarY,
-        width: toolbarWidth,
-        height: toolbarHeight
+        width: toolbarWidth
       }}
-      onMouseEnter={onMouseEnter}
-      onMouseLeave={onMouseLeave}
     >
-      <div className="flex items-center gap-2 mb-2">
-        <div className="text-xs font-medium text-muted-foreground">Free Text</div>
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-sm font-medium text-muted-foreground">
+          {selectedTextBox.type === 'freeText' ? 'Free Text' : 'Text Box'}
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onDelete}
+          className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+        >
+          ×
+        </Button>
+      </div>
+      
+      <div className="flex items-center gap-2 mb-3">
         <FontSelector
-          value={textBox.fontFamily}
+          value={selectedTextBox.fontFamily}
           onChange={onFontChange}
         />
         <ColorPicker
-          value={textBox.color}
+          value={selectedTextBox.color}
           onChange={onColorChange}
         />
       </div>
@@ -76,13 +77,13 @@ export const FreeTextToolbar: React.FC<FreeTextToolbarProps> = ({
         <label className="text-xs font-medium whitespace-nowrap">Size:</label>
         <input
           type="range"
-          min="16"
+          min="8"
           max="48"
-          value={textBox.fontSize}
+          value={selectedTextBox.fontSize}
           onChange={(e) => onFontSizeChange(parseInt(e.target.value))}
           className="flex-1"
         />
-        <span className="text-xs text-muted-foreground w-8">{textBox.fontSize}px</span>
+        <span className="text-xs text-muted-foreground w-10">{selectedTextBox.fontSize}px</span>
       </div>
     </div>
   );

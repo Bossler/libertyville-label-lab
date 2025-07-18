@@ -758,6 +758,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   />
                 </div>
               ))}
+              
+              {/* Floating toolbar for selected text box */}
+              {selectedTextBoxIndex !== null && (
+                <FreeTextToolbar
+                  isVisible={true}
+                  selectedTextBox={labelData.textBoxes[selectedTextBoxIndex]}
+                  onFontChange={updateSelectedTextBoxFont}
+                  onColorChange={updateSelectedTextBoxColor}
+                  onFontSizeChange={updateSelectedTextBoxFontSize}
+                  onDelete={deleteSelectedTextBox}
+                  position={{
+                    x: labelData.textBoxes[selectedTextBoxIndex].x + 350,
+                    y: labelData.textBoxes[selectedTextBoxIndex].y - 60
+                  }}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -855,59 +871,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             </Button>
           </div>
 
-          {/* Selected Text Box Controls */}
-          {selectedTextBoxData && (
-            <div className="space-y-2 p-3 border border-border rounded-md">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium">
-                  Selected {selectedTextBoxData.type === 'freeText' ? 'Free Text' : 'Text Box'}
-                </h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedTextBoxIndex(null)}
-                  className="h-6 w-6 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <div className="flex gap-2">
-                <FontSelector
-                  value={selectedTextBoxData.fontFamily}
-                  onChange={updateSelectedTextBoxFont}
-                />
-                <ColorPicker
-                  value={selectedTextBoxData.color}
-                  onChange={updateSelectedTextBoxColor}
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-xs">Font Size</label>
-                <input
-                  type="range"
-                  min="8"
-                  max="48"
-                  value={selectedTextBoxData.fontSize}
-                  onChange={(e) => updateSelectedTextBoxFontSize(parseInt(e.target.value))}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>8px</span>
-                  <span>{selectedTextBoxData.fontSize}px</span>
-                  <span>48px</span>
-                </div>
-              </div>
-              <Button
-                onClick={deleteSelectedTextBox}
-                variant="destructive"
-                size="sm"
-                className="w-full"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Text Box
-              </Button>
-            </div>
-          )}
 
           {/* Download */}
           <Button
