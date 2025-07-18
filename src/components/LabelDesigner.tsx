@@ -136,7 +136,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.restore();
     
     // Product details - 12pt font, fill width of rectangle
-    const productFontSize = 10; // 12pt at 72dpi = 10px at 96dpi canvas scale
+    const productFontSize = 16; // 12pt at 96dpi = 16px
     const productFont = 'FertigoPro, serif';
     ctx.font = `${productFontSize}px ${productFont}`;
     ctx.fillStyle = '#000000';
@@ -157,7 +157,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.fillText(`Roast Date: ${roastDate}`, CANVAS_WIDTH / 2, productInfoY + 14);
 
     // Company info - 10pt font
-    const footerFontSize = 8; // 10pt at 72dpi = 8px at 96dpi canvas scale
+    const footerFontSize = 13; // 10pt at 96dpi = 13px
     const footerFont = 'FertigoPro, serif';
     ctx.font = `${footerFontSize}px ${footerFont}`;
     
