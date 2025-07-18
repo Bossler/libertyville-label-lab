@@ -417,8 +417,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       const deltaX = moveEvent.clientX - startX;
                       const deltaY = moveEvent.clientY - startY;
                       
-                      const newX = Math.max(0, Math.min(CANVAS_WIDTH - labelData.backgroundImage!.width, startImageX + deltaX));
-                      const newY = Math.max(0, Math.min(CANVAS_HEIGHT - labelData.backgroundImage!.height, startImageY + deltaY));
+                      // Allow free movement without boundaries
+                      const newX = startImageX + deltaX;
+                      const newY = startImageY + deltaY;
                       
                       onLabelChange({
                         ...labelData,
