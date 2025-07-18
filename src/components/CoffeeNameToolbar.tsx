@@ -89,20 +89,20 @@ export const CoffeeNameToolbar: React.FC<CoffeeNameToolbarProps> = ({
             <option value="AgencyFB, sans-serif" style={{ fontFamily: 'AgencyFB, sans-serif' }}>Agency FB</option>
             <option value="Alger, serif" style={{ fontFamily: 'Alger, serif' }}>Alger</option>
             <option value="Antique, serif" style={{ fontFamily: 'Antique, serif' }}>Antique</option>
+            <option value="ArialCustom, sans-serif" style={{ fontFamily: 'ArialCustom, sans-serif' }}>Arial</option>
+            <option value="Bahnschrift, sans-serif" style={{ fontFamily: 'Bahnschrift, sans-serif' }}>Bahnschrift</option>
             <option value="Bell, serif" style={{ fontFamily: 'Bell, serif' }}>Bell</option>
+            <option value="Cambria, serif" style={{ fontFamily: 'Cambria, serif' }}>Cambria</option>
             <option value="Dubai, sans-serif" style={{ fontFamily: 'Dubai, sans-serif' }}>Dubai</option>
-            <option value="FreeScript, cursive" style={{ fontFamily: 'FreeScript, cursive' }}>Free Script</option>
             <option value="FertigoPro, serif" style={{ fontFamily: 'FertigoPro, serif' }}>Fertigo Pro</option>
+            <option value="FreeScript, cursive" style={{ fontFamily: 'FreeScript, cursive' }}>Free Script</option>
             <option value="FuturaBlack, sans-serif" style={{ fontFamily: 'FuturaBlack, sans-serif' }}>Futura Black</option>
             <option value="IntensaBlack, sans-serif" style={{ fontFamily: 'IntensaBlack, sans-serif' }}>Intensa Black</option>
-            <option value="InterstateMono, monospace" style={{ fontFamily: 'InterstateMono, monospace' }}>Interstate Mono</option>
             <option value="InterstateBlack, sans-serif" style={{ fontFamily: 'InterstateBlack, sans-serif' }}>Interstate Black</option>
+            <option value="InterstateMono, monospace" style={{ fontFamily: 'InterstateMono, monospace' }}>Interstate Mono</option>
             <option value="Jokerman, fantasy" style={{ fontFamily: 'Jokerman, fantasy' }}>Jokerman</option>
             <option value="LithosPro, serif" style={{ fontFamily: 'LithosPro, serif' }}>Lithos Pro</option>
             <option value="Mistral, cursive" style={{ fontFamily: 'Mistral, cursive' }}>Mistral</option>
-            <option value="ArialCustom, sans-serif" style={{ fontFamily: 'ArialCustom, sans-serif' }}>Arial</option>
-            <option value="Bahnschrift, sans-serif" style={{ fontFamily: 'Bahnschrift, sans-serif' }}>Bahnschrift</option>
-            <option value="Cambria, serif" style={{ fontFamily: 'Cambria, serif' }}>Cambria</option>
           </select>
         </div>
       </div>
