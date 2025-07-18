@@ -32,8 +32,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [selectedTextBoxIndex, setSelectedTextBoxIndex] = useState<number | null>(null);
   const [showStylingPanel, setShowStylingPanel] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
-  const [coffeeNamePosition, setCoffeeNamePosition] = useState({ x: CANVAS_WIDTH / 2, y: 80 });
   const [isDraggingCoffeeName, setIsDraggingCoffeeName] = useState(false);
+
+  // Initialize coffee name position from labelData or use default
+  const coffeeNamePosition = labelData.coffeeNamePosition || { x: CANVAS_WIDTH / 2, y: 80 };
 
   // Canvas drawing function
   const drawCanvas = useCallback(() => {
@@ -418,7 +420,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
       newX = Math.max(halfWidth, Math.min(CANVAS_WIDTH - halfWidth, newX));
       newY = Math.max(textBottom, Math.min(CANVAS_HEIGHT - 10, newY));
       
-      setCoffeeNamePosition({ x: newX, y: newY });
+      // Update position in labelData so it persists
+      onLabelChange({
+        ...labelData,
+        coffeeNamePosition: { x: newX, y: newY }
+      });
     };
     
     const handleMouseUp = () => {
@@ -433,7 +439,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
 
   useEffect(() => {
     drawCanvas();
-  }, [drawCanvas, coffeeNamePosition]);
+  }, [drawCanvas, labelData.coffeeNamePosition]);
 
   const selectedTextBoxData = selectedTextBoxIndex !== null 
     ? labelData.textBoxes[selectedTextBoxIndex] 
