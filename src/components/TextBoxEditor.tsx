@@ -50,6 +50,7 @@ export const TextBoxEditor: React.FC<TextBoxEditorProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevent click from bubbling to overlay
     onSelect();
     
     setIsDragging(true);
