@@ -571,6 +571,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
             <div
               ref={overlayRef}
               className="absolute top-0 left-0 pointer-events-auto"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedTextBoxIndex(null);
+                setIsCoffeeNameSelected(false);
+              }}
               style={{
                 width: CANVAS_WIDTH,
                 height: CANVAS_HEIGHT,
@@ -751,21 +756,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                     }}
                     onSelect={() => setSelectedTextBoxIndex(index)}
                   />
-                  
-                  {/* Free Text Floating Toolbar - Only on Desktop */}
-                  {textBox.type === 'freeText' && selectedTextBoxIndex === index && !isMobile && (
-                    <FreeTextToolbar
-                      textBox={textBox}
-                      position={{ x: textBox.x + textBox.width / 2, y: textBox.y }}
-                      bounds={{ width: textBox.width, height: textBox.height }}
-                      onFontChange={(font) => updateTextBox({ ...textBox, fontFamily: font })}
-                      onColorChange={(color) => updateTextBox({ ...textBox, color })}
-                      onFontSizeChange={(size) => updateTextBox({ ...textBox, fontSize: size })}
-                      isVisible={true}
-                      canvasWidth={CANVAS_WIDTH}
-                      canvasHeight={CANVAS_HEIGHT}
-                    />
-                  )}
                 </div>
               ))}
             </div>
@@ -868,9 +858,19 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           {/* Selected Text Box Controls */}
           {selectedTextBoxData && (
             <div className="space-y-2 p-3 border border-border rounded-md">
-              <h3 className="text-sm font-medium">
-                Selected {selectedTextBoxData.type === 'freeText' ? 'Free Text' : 'Text Box'}
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium">
+                  Selected {selectedTextBoxData.type === 'freeText' ? 'Free Text' : 'Text Box'}
+                </h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedTextBoxIndex(null)}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
               <div className="flex gap-2">
                 <FontSelector
                   value={selectedTextBoxData.fontFamily}
