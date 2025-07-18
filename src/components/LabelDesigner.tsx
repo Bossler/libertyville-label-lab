@@ -135,8 +135,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.fill();
     ctx.restore();
     
-    // Product details - 10pt font, top justified to box
-    const productFontSize = 13; // 10pt at 96dpi = 13px
+    // Product details - 11pt font, top justified to box
+    const productFontSize = 15; // 11pt at 96dpi = 15px
     const productFont = 'FertigoPro, serif';
     ctx.font = `${productFontSize}px ${productFont}`;
     ctx.fillStyle = '#000000';
