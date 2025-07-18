@@ -40,6 +40,7 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const isMobile = useIsMobile();
   const [isCoffeeNameSelected, setIsCoffeeNameSelected] = useState(false);
   const [isHoveringCoffeeName, setIsHoveringCoffeeName] = useState(false);
+  const [toolbarHoverTimeout, setToolbarHoverTimeout] = useState<NodeJS.Timeout | null>(null);
 
   // Initialize coffee name position from labelData or use default
   const coffeeNamePosition = labelData.coffeeNamePosition || { x: CANVAS_WIDTH / 2, y: 80 };
@@ -503,8 +504,23 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   zIndex: 10
                 }}
                 onMouseDown={handleCoffeeNameMouseDown}
-                onMouseEnter={() => !isMobile && setIsHoveringCoffeeName(true)}
-                onMouseLeave={() => !isMobile && setIsHoveringCoffeeName(false)}
+                onMouseEnter={() => {
+                  if (!isMobile) {
+                    if (toolbarHoverTimeout) {
+                      clearTimeout(toolbarHoverTimeout);
+                      setToolbarHoverTimeout(null);
+                    }
+                    setIsHoveringCoffeeName(true);
+                  }
+                }}
+                onMouseLeave={() => {
+                  if (!isMobile) {
+                    const timeout = setTimeout(() => {
+                      setIsHoveringCoffeeName(false);
+                    }, 150);
+                    setToolbarHoverTimeout(timeout);
+                  }
+                }}
                 title={isMobile ? "Tap to select coffee name" : "Drag to move coffee name"}
               />
               
@@ -519,6 +535,18 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 isVisible={isHoveringCoffeeName && !isDraggingCoffeeName}
                 canvasWidth={CANVAS_WIDTH}
                 canvasHeight={CANVAS_HEIGHT}
+                onMouseEnter={() => {
+                  if (toolbarHoverTimeout) {
+                    clearTimeout(toolbarHoverTimeout);
+                    setToolbarHoverTimeout(null);
+                  }
+                }}
+                onMouseLeave={() => {
+                  const timeout = setTimeout(() => {
+                    setIsHoveringCoffeeName(false);
+                  }, 150);
+                  setToolbarHoverTimeout(timeout);
+                }}
               />
               {/* Image drag/resize handles only - no image display */}
               {labelData.backgroundImage && (

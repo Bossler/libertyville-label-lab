@@ -11,6 +11,8 @@ interface CoffeeNameToolbarProps {
   isVisible: boolean;
   canvasWidth: number;
   canvasHeight: number;
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
 }
 
 export const CoffeeNameToolbar: React.FC<CoffeeNameToolbarProps> = ({
@@ -22,7 +24,9 @@ export const CoffeeNameToolbar: React.FC<CoffeeNameToolbarProps> = ({
   onColorChange,
   isVisible,
   canvasWidth,
-  canvasHeight
+  canvasHeight,
+  onMouseEnter,
+  onMouseLeave
 }) => {
   const isMobile = useIsMobile();
   const toolbarRef = useRef<HTMLDivElement>(null);
@@ -66,6 +70,8 @@ export const CoffeeNameToolbar: React.FC<CoffeeNameToolbarProps> = ({
       }}
       // Prevent toolbar from interfering with drag operations
       onMouseDown={(e) => e.stopPropagation()}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
     >
       {/* Compact font selector - no label, minimal spacing */}
       <div className="flex items-center">
