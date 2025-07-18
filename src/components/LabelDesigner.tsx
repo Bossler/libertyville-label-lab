@@ -115,11 +115,6 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.fillStyle = '#000000';
     ctx.textAlign = 'center';
     
-    // All footer text uses Fertigo Pro at 10pt (8px at canvas scale)
-    const footerFontSize = 8; // 10pt at 72dpi = 8px at 96dpi canvas scale
-    const footerFont = 'FertigoPro, serif';
-    ctx.font = `${footerFontSize}px ${footerFont}`;
-    
     // Calculate text positions - moved closer together
     const productInfoY = CANVAS_HEIGHT - 80;
     const today = new Date();
@@ -140,12 +135,32 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     ctx.fill();
     ctx.restore();
     
-    // Product details grouped together
+    // Product details - 12pt font, fill width of rectangle
+    const productFontSize = 10; // 12pt at 72dpi = 10px at 96dpi canvas scale
+    const productFont = 'FertigoPro, serif';
+    ctx.font = `${productFontSize}px ${productFont}`;
     ctx.fillStyle = '#000000';
-    ctx.fillText(`${displayProductInfo.weight} • ${displayProductInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'} • ${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, CANVAS_WIDTH / 2, productInfoY);
-    ctx.fillText(`Roast Date: ${roastDate}`, CANVAS_WIDTH / 2, productInfoY + 12);
+    
+    // Split product info across the width of the rectangle
+    const leftX = backgroundX + padding + 40;
+    const centerX = CANVAS_WIDTH / 2;
+    const rightX = backgroundX + backgroundWidth - padding - 40;
+    
+    ctx.textAlign = 'left';
+    ctx.fillText(`${displayProductInfo.weight}`, leftX, productInfoY);
+    ctx.textAlign = 'center';
+    ctx.fillText(`${displayProductInfo.grind === 'whole-bean' ? 'Whole Bean' : 'Ground'}`, centerX, productInfoY);
+    ctx.textAlign = 'right';
+    ctx.fillText(`${displayProductInfo.type === 'regular' ? 'Regular' : 'Decaffeinated'}`, rightX, productInfoY);
+    
+    ctx.textAlign = 'center';
+    ctx.fillText(`Roast Date: ${roastDate}`, CANVAS_WIDTH / 2, productInfoY + 14);
 
-    // Company info
+    // Company info - 10pt font
+    const footerFontSize = 8; // 10pt at 72dpi = 8px at 96dpi canvas scale
+    const footerFont = 'FertigoPro, serif';
+    ctx.font = `${footerFontSize}px ${footerFont}`;
+    
     ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', CANVAS_WIDTH / 2, productInfoY + 28);
     ctx.fillText('Libertyville IL', CANVAS_WIDTH / 2, productInfoY + 40);
     ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, productInfoY + 52);
