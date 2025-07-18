@@ -28,21 +28,24 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
   const [dragStart, setDragStart] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
   const [imageNaturalSize, setImageNaturalSize] = useState<{ width: number, height: number }>({ width: 0, height: 0 });
 
-  // When image loads, set its natural size and fit to canvas width
+  // When image loads, set its natural size and set initial zoom to fit image
   useEffect(() => {
     const img = new window.Image();
     img.onload = () => {
       setImageNaturalSize({ width: img.width, height: img.height });
 
-      // Always scale to match canvas width (fit-width approach)
-      const initialZoom = canvasWidth / img.width;
+      // Set initial zoom to fit image within canvas while maintaining aspect ratio
+      const scaleX = canvasWidth / img.width;
+      const scaleY = canvasHeight / img.height;
+      const initialZoom = Math.min(scaleX, scaleY);
       setZoom(initialZoom);
 
-      // Center image vertically, align to left edge horizontally
+      // Center image both horizontally and vertically
+      const displayWidth = img.width * initialZoom;
       const displayHeight = img.height * initialZoom;
       setPosition({
-        x: 0, // Always align to left edge (fills width)
-        y: (canvasHeight - displayHeight) / 2 // Center vertically
+        x: (canvasWidth - displayWidth) / 2,
+        y: (canvasHeight - displayHeight) / 2
       });
     };
     img.src = imageUrl;
@@ -59,13 +62,10 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
-    let newX = 0; // Lock horizontal position (always fill width)
-    let newY = e.clientY - dragStart.y;
+    const newX = e.clientX - dragStart.x;
+    const newY = e.clientY - dragStart.y;
 
-    // Only allow vertical movement with proper bounds
-    const displayHeight = imageNaturalSize.height * zoom;
-    const minY = canvasHeight - displayHeight;
-    newY = Math.min(0, Math.max(minY, newY));
+    // Allow free movement (image can exceed boundaries when zoomed in)
     setPosition({ x: newX, y: newY });
   };
 
@@ -75,12 +75,10 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
-      let newX = 0; // Lock horizontal position (always fill width)
-      let newY = e.clientY - dragStart.y;
+      const newX = e.clientX - dragStart.x;
+      const newY = e.clientY - dragStart.y;
 
-      const displayHeight = imageNaturalSize.height * zoom;
-      const minY = canvasHeight - displayHeight;
-      newY = Math.min(0, Math.max(minY, newY));
+      // Allow free movement (image can exceed boundaries when zoomed in)
       setPosition({ x: newX, y: newY });
     };
     const handleGlobalMouseUp = () => setIsDragging(false);
@@ -93,29 +91,31 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, dragStart, zoom, imageNaturalSize.width, imageNaturalSize.height, canvasWidth, canvasHeight]);
+  }, [isDragging, dragStart]);
 
-  // Zoom handler: maintain width fill and adjust vertical position
+  // Zoom handler: maintain center point while allowing proportional scaling
   const handleZoomChange = (newZoomArr: number[]) => {
     const newZoom = newZoomArr[0];
     
-    // Calculate the vertical center point to maintain
+    // Calculate the center point of the visible area to maintain
+    const oldDisplayWidth = imageNaturalSize.width * zoom;
     const oldDisplayHeight = imageNaturalSize.height * zoom;
+    const centerX = -position.x + canvasWidth / 2;
     const centerY = -position.y + canvasHeight / 2;
-    const relativeCenter = centerY / oldDisplayHeight;
+    const relativeCenterX = centerX / oldDisplayWidth;
+    const relativeCenterY = centerY / oldDisplayHeight;
 
     // Calculate new dimensions and position
+    const newDisplayWidth = imageNaturalSize.width * newZoom;
     const newDisplayHeight = imageNaturalSize.height * newZoom;
-    const newCenterY = relativeCenter * newDisplayHeight;
+    const newCenterX = relativeCenterX * newDisplayWidth;
+    const newCenterY = relativeCenterY * newDisplayHeight;
     
-    let newY = canvasHeight / 2 - newCenterY;
-
-    // Clamp vertical position to avoid empty crop regions
-    const minY = canvasHeight - newDisplayHeight;
-    newY = Math.min(0, Math.max(minY, newY));
+    const newX = canvasWidth / 2 - newCenterX;
+    const newY = canvasHeight / 2 - newCenterY;
 
     setZoom(newZoom);
-    setPosition({ x: 0, y: newY }); // Always keep x at 0 to fill width
+    setPosition({ x: newX, y: newY });
   };
 
   // Confirm: output crop info for rendering/export
@@ -189,8 +189,8 @@ export const ImageAdjustModal: React.FC<ImageAdjustModalProps> = ({
             <ZoomOut className="w-4 h-4 flex-shrink-0" />
             <Slider
               value={[zoom]}
-              min={canvasWidth / imageNaturalSize.width}
-              max={3}
+              min={0.25}
+              max={5}
               step={0.01}
               className="flex-1"
               onValueChange={handleZoomChange}
