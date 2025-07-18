@@ -87,8 +87,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   }, [labelData, previewMode]);
 
   // Helper function to calculate optimal font size for coffee name
-  const calculateOptimalFontSize = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, maxFontSize: number, minFontSize: number, fontFamily: string): number => {
-    let fontSize = maxFontSize;
+  const calculateOptimalFontSize = (ctx: CanvasRenderingContext2D, text: string, maxWidth: number, requestedFontSize: number, minFontSize: number, fontFamily: string): number => {
+    let fontSize = requestedFontSize;
     
     while (fontSize >= minFontSize) {
       ctx.font = `bold ${fontSize}px ${fontFamily}`;
@@ -121,11 +121,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const coffeeName = productInfo?.name || labelData.coffeeName || 'Coffee Name';
     const fontFamily = labelData.coffeeNameFont || 'serif';
     const maxWidth = CANVAS_WIDTH - 40; // Leave 20px margin on each side
-    const maxFontSize = 32;
+    const requestedFontSize = labelData.coffeeNameFontSize || 32;
     const minFontSize = 16;
     
-    // Calculate optimal font size
-    const optimalFontSize = calculateOptimalFontSize(ctx, coffeeName, maxWidth, maxFontSize, minFontSize, fontFamily);
+    // Calculate optimal font size based on user's requested size
+    const optimalFontSize = calculateOptimalFontSize(ctx, coffeeName, maxWidth, requestedFontSize, minFontSize, fontFamily);
     ctx.font = `bold ${optimalFontSize}px ${fontFamily}`;
     
     // Check if text still doesn't fit at minimum size - wrap if needed
@@ -334,6 +334,13 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     });
   };
 
+  const updateCoffeeNameFontSize = (size: number) => {
+    onLabelChange({
+      ...labelData,
+      coffeeNameFontSize: size
+    });
+  };
+
   const updateSelectedTextBoxFont = (font: string) => {
     if (selectedTextBoxIndex !== null) {
       const textBox = labelData.textBoxes[selectedTextBoxIndex];
@@ -378,10 +385,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const coffeeName = productInfo?.name || labelData.coffeeName || 'Coffee Name';
     const fontFamily = labelData.coffeeNameFont || 'serif';
     const maxWidth = CANVAS_WIDTH - 40;
-    const maxFontSize = 32;
+    const requestedFontSize = labelData.coffeeNameFontSize || 32;
     const minFontSize = 16;
     
-    const optimalFontSize = calculateOptimalFontSize(ctx, coffeeName, maxWidth, maxFontSize, minFontSize, fontFamily);
+    const optimalFontSize = calculateOptimalFontSize(ctx, coffeeName, maxWidth, requestedFontSize, minFontSize, fontFamily);
     ctx.font = `bold ${optimalFontSize}px ${fontFamily}`;
     
     const textWidth = ctx.measureText(coffeeName).width;
@@ -530,8 +537,10 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 bounds={getCoffeeNameBounds()}
                 font={labelData.coffeeNameFont || 'serif'}
                 color={labelData.coffeeNameColor || '#ffffff'}
+                fontSize={labelData.coffeeNameFontSize || 32}
                 onFontChange={updateCoffeeNameFont}
                 onColorChange={updateCoffeeNameColor}
+                onFontSizeChange={updateCoffeeNameFontSize}
                 isVisible={isHoveringCoffeeName && !isDraggingCoffeeName}
                 canvasWidth={CANVAS_WIDTH}
                 canvasHeight={CANVAS_HEIGHT}
@@ -690,15 +699,33 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
               </div>
               {/* Show controls always on desktop, only when selected on mobile */}
               {(!isMobile || isCoffeeNameSelected) && (
-                <div className="flex gap-2">
-                  <FontSelector
-                    value={labelData.coffeeNameFont || 'serif'}
-                    onChange={updateCoffeeNameFont}
-                  />
-                  <ColorPicker
-                    value={labelData.coffeeNameColor || '#ffffff'}
-                    onChange={updateCoffeeNameColor}
-                  />
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <FontSelector
+                      value={labelData.coffeeNameFont || 'serif'}
+                      onChange={updateCoffeeNameFont}
+                    />
+                    <ColorPicker
+                      value={labelData.coffeeNameColor || '#ffffff'}
+                      onChange={updateCoffeeNameColor}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium">Font Size</label>
+                    <input
+                      type="range"
+                      min="16"
+                      max="48"
+                      value={labelData.coffeeNameFontSize || 32}
+                      onChange={(e) => updateCoffeeNameFontSize(parseInt(e.target.value))}
+                      className="w-full"
+                    />
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>16px</span>
+                      <span>{labelData.coffeeNameFontSize || 32}px</span>
+                      <span>48px</span>
+                    </div>
+                  </div>
                 </div>
               )}
               {/* Mobile hint when not selected */}

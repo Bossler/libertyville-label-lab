@@ -6,8 +6,10 @@ interface CoffeeNameToolbarProps {
   bounds: { width: number; height: number } | null;
   font: string;
   color: string;
+  fontSize: number;
   onFontChange: (font: string) => void;
   onColorChange: (color: string) => void;
+  onFontSizeChange: (size: number) => void;
   isVisible: boolean;
   canvasWidth: number;
   canvasHeight: number;
@@ -20,8 +22,10 @@ export const CoffeeNameToolbar: React.FC<CoffeeNameToolbarProps> = ({
   bounds,
   font,
   color,
+  fontSize,
   onFontChange,
   onColorChange,
+  onFontSizeChange,
   isVisible,
   canvasWidth,
   canvasHeight,
@@ -105,6 +109,22 @@ export const CoffeeNameToolbar: React.FC<CoffeeNameToolbarProps> = ({
             <option value="Mistral, cursive" style={{ fontFamily: 'Mistral, cursive' }}>Mistral</option>
           </select>
         </div>
+      </div>
+      
+      <div className="w-px h-6 bg-border" />
+      
+      {/* Compact font size slider */}
+      <div className="flex items-center space-x-1">
+        <input
+          type="range"
+          min="16"
+          max="48"
+          value={fontSize}
+          onChange={(e) => onFontSizeChange(parseInt(e.target.value))}
+          className="w-12 h-1 bg-border rounded-lg appearance-none cursor-pointer"
+          title={`Font size: ${fontSize}px`}
+        />
+        <span className="text-xs text-muted-foreground w-7 text-center">{fontSize}</span>
       </div>
       
       <div className="w-px h-6 bg-border" />

@@ -25,6 +25,7 @@ export interface LabelData {
   coffeeName: string;
   coffeeNameFont: string;
   coffeeNameColor: string;
+  coffeeNameFontSize?: number;
   coffeeNamePosition?: { x: number; y: number };
   backgroundImage?: ImageElement;
   textBoxes: TextBox[];
