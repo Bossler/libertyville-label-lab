@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Image, Plus, Trash2, Type } from 'lucide-react';
+import { Download, Image, Plus, Trash2, Type, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { FontSelector } from './FontSelector';
 import { ColorPicker } from './ColorPicker';
 import { ImageAdjustModal } from './ImageAdjustModal';
 import { TextBoxEditor } from './TextBoxEditor';
+import { CoffeeNameToolbar } from './CoffeeNameToolbar';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { LabelData, ProductInfo, TextBox, ImageElement } from '@/types/label';
 
 interface LabelDesignerProps {
@@ -33,6 +35,11 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
   const [showStylingPanel, setShowStylingPanel] = useState(false);
   const [tempImageUrl, setTempImageUrl] = useState<string | null>(null);
   const [isDraggingCoffeeName, setIsDraggingCoffeeName] = useState(false);
+  
+  // Mobile-specific state for coffee name selection
+  const isMobile = useIsMobile();
+  const [isCoffeeNameSelected, setIsCoffeeNameSelected] = useState(false);
+  const [isHoveringCoffeeName, setIsHoveringCoffeeName] = useState(false);
 
   // Initialize coffee name position from labelData or use default
   const coffeeNamePosition = labelData.coffeeNamePosition || { x: CANVAS_WIDTH / 2, y: 80 };
@@ -385,10 +392,16 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     };
   };
 
-  // Handle coffee name drag
+  // Handle coffee name interaction (click/tap or drag)
   const handleCoffeeNameMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // On mobile, handle tap to select
+    if (isMobile) {
+      setIsCoffeeNameSelected(!isCoffeeNameSelected);
+      return;
+    }
     
     setIsDraggingCoffeeName(true);
     
@@ -475,9 +488,13 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                 overflow: 'hidden'
               }}
             >
-              {/* Coffee Name Drag Area */}
+              {/* Coffee Name Interactive Area */}
               <div
-                className={`absolute cursor-move ${isDraggingCoffeeName ? 'bg-blue-200 bg-opacity-30' : 'hover:bg-blue-100 hover:bg-opacity-20'} transition-colors`}
+                className={`absolute transition-colors ${
+                  isMobile 
+                    ? `cursor-pointer ${isCoffeeNameSelected ? 'bg-blue-200 bg-opacity-40' : 'hover:bg-blue-100 hover:bg-opacity-20'}`
+                    : `cursor-move ${isDraggingCoffeeName ? 'bg-blue-200 bg-opacity-30' : 'hover:bg-blue-100 hover:bg-opacity-20'}`
+                }`}
                 style={{
                   left: coffeeNamePosition.x - (getCoffeeNameBounds()?.width || 100) / 2 - 10,
                   top: coffeeNamePosition.y - (getCoffeeNameBounds()?.height || 20) - 5,
@@ -486,7 +503,22 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                   zIndex: 10
                 }}
                 onMouseDown={handleCoffeeNameMouseDown}
-                title="Drag to move coffee name"
+                onMouseEnter={() => !isMobile && setIsHoveringCoffeeName(true)}
+                onMouseLeave={() => !isMobile && setIsHoveringCoffeeName(false)}
+                title={isMobile ? "Tap to select coffee name" : "Drag to move coffee name"}
+              />
+              
+              {/* Desktop Floating Toolbar */}
+              <CoffeeNameToolbar
+                position={coffeeNamePosition}
+                bounds={getCoffeeNameBounds()}
+                font={labelData.coffeeNameFont || 'serif'}
+                color={labelData.coffeeNameColor || '#ffffff'}
+                onFontChange={updateCoffeeNameFont}
+                onColorChange={updateCoffeeNameColor}
+                isVisible={isHoveringCoffeeName && !isDraggingCoffeeName}
+                canvasWidth={CANVAS_WIDTH}
+                canvasHeight={CANVAS_HEIGHT}
               />
               {/* Image drag/resize handles only - no image display */}
               {labelData.backgroundImage && (
@@ -610,20 +642,43 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
           {/* Coffee Name Display and Styling */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Coffee Name Style</label>
-            <div className="p-3 border border-border rounded-md bg-muted/20">
-              <div className="text-sm text-muted-foreground mb-2">
-                {productInfo?.name || labelData.coffeeName || 'Coffee Name'}
+            <div className={`p-3 border border-border rounded-md transition-colors ${
+              isMobile && isCoffeeNameSelected ? 'bg-blue-50 border-blue-300' : 'bg-muted/20'
+            }`}>
+              <div className="flex items-center justify-between mb-2">
+                <div className="text-sm text-muted-foreground">
+                  {productInfo?.name || labelData.coffeeName || 'Coffee Name'}
+                </div>
+                {isMobile && isCoffeeNameSelected && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsCoffeeNameSelected(false)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
               </div>
-              <div className="flex gap-2">
-                <FontSelector
-                  value={labelData.coffeeNameFont || 'serif'}
-                  onChange={updateCoffeeNameFont}
-                />
-                <ColorPicker
-                  value={labelData.coffeeNameColor || '#ffffff'}
-                  onChange={updateCoffeeNameColor}
-                />
-              </div>
+              {/* Show controls always on desktop, only when selected on mobile */}
+              {(!isMobile || isCoffeeNameSelected) && (
+                <div className="flex gap-2">
+                  <FontSelector
+                    value={labelData.coffeeNameFont || 'serif'}
+                    onChange={updateCoffeeNameFont}
+                  />
+                  <ColorPicker
+                    value={labelData.coffeeNameColor || '#ffffff'}
+                    onChange={updateCoffeeNameColor}
+                  />
+                </div>
+              )}
+              {/* Mobile hint when not selected */}
+              {isMobile && !isCoffeeNameSelected && (
+                <div className="text-xs text-muted-foreground">
+                  Tap coffee name on canvas to edit style
+                </div>
+              )}
             </div>
           </div>
 
