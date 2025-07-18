@@ -417,9 +417,9 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
                       const deltaX = moveEvent.clientX - startX;
                       const deltaY = moveEvent.clientY - startY;
                       
-                      // Allow free movement without boundaries
-                      const newX = startImageX + deltaX;
-                      const newY = startImageY + deltaY;
+                      // Invert the delta to make drag feel intuitive
+                      const newX = startImageX - deltaX;
+                      const newY = startImageY - deltaY;
                       
                       onLabelChange({
                         ...labelData,
