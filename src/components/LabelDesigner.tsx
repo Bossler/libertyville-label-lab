@@ -161,9 +161,8 @@ export const LabelDesigner: React.FC<LabelDesignerProps> = ({
     const footerFont = 'FertigoPro, serif';
     ctx.font = `${footerFontSize}px ${footerFont}`;
     
-    ctx.fillText('Custom Roasted By JavaMania Coffee Roastery', CANVAS_WIDTH / 2, productInfoY + 28);
-    ctx.fillText('Libertyville IL', CANVAS_WIDTH / 2, productInfoY + 40);
-    ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, productInfoY + 52);
+    ctx.fillText('JavaMania Coffee Roastery | Libertyville IL', CANVAS_WIDTH / 2, productInfoY + 28);
+    ctx.fillText('www.javamania.com', CANVAS_WIDTH / 2, productInfoY + 40);
     ctx.fillText('100% Arabica Coffee & Natural Flavors', CANVAS_WIDTH / 2, productInfoY + 64);
   };
 
